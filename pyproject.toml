@@ -1,0 +1,10 @@
+[project]
+name = "python-video-backup"
+version = "1.0"
+description = "個人用的影片備份腳本"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "ffmpy>=1.0.0",
+    "yt-dlp[default]>=2026.3.17",
+]
