@@ -60,8 +60,14 @@ def download(urls: str) -> tuple[dict, Path]:
             if 'Sign in to confirm you’re not a bot.' in str(e):
                 print('\nyoutube要求登入，請考慮匯入瀏覽器cookie')
                 sys.exit()
+            elif 'Read timed out.' in str(e):
+                print('\n網路連線逾時，請檢查網路後再試一次')
+                sys.exit()
+            elif 'Unable to download API page' in str(e):
+                print('\nAPI解析失敗，請檢查網路後再試一次')
+                sys.exit()
             else:
-                print('意外錯誤，請考慮將以下錯誤回報\n' + str(e))
+                print('\n意外錯誤，請考慮將以下錯誤回報\n' + str(e))
                 sys.exit()
 
     #重命名部份檔案
