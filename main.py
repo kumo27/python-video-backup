@@ -13,13 +13,29 @@ temp_dir: Path = Path.cwd() / 'temp' #緩存目錄
 
 #初始化
 def temp_init():
-    if temp_dir.exists() == True:
+    if temp_dir.exists():
         for f in temp_dir.iterdir():
             f.unlink()
     temp_dir.mkdir(exist_ok=True)
 
+def urls_preprocess() -> list[str] | str:
+    #變數定義
+    urls_txt = Path.cwd() / 'urls.txt'
+
+    if urls_txt.exists():
+        ask_str = input('是否使用urls.txt(y/n): ').strip().lower()
+        if ask_str == 'y':
+            urls = urls_txt.open().readlines()
+            return urls
+        elif ask_str != 'n':
+            print('\n無效參數')
+            sys.exit()
+    
+    urls = input('\n請輸入影片網址: ')
+    return urls
+
 #下載
-def download(urls: str) -> tuple[dict, Path]:
+def download(urls) -> tuple[dict, Path]:
     #變數定義
     video_info = {} #影片資訊
     ydl_opts = {
@@ -45,7 +61,7 @@ def download(urls: str) -> tuple[dict, Path]:
 
     #選擇從瀏覽器匯入cookie
     browser_key = input(ask_str).strip()
-    if browser_key.isnumeric() and int(browser_key) < len(browser_opt):
+    if browser_key.isdecimal() and int(browser_key) < len(browser_opt):
         if int(browser_key) > 0:
             ydl_opts['cookiesfrombrowser'] = (browser_opt[int(browser_key)], )
     else:
@@ -65,6 +81,9 @@ def download(urls: str) -> tuple[dict, Path]:
                 sys.exit()
             elif 'Unable to download API page' in str(e):
                 print('\nAPI解析失敗，請檢查網路後再試一次')
+                sys.exit()
+            elif 'is not a valid URL' in str(e):
+                print('\n無效連結，請檢查連結後再試一次')
                 sys.exit()
             else:
                 print('\n意外錯誤，請考慮將以下錯誤回報\n' + str(e))
@@ -206,8 +225,13 @@ def par2_process(finish_dir: Path):
 
 if __name__ == '__main__':
     temp_init()
-    video_info, finish_dir = download(input('請輸入影片網址: '))
-    merge(finish_dir)
-    json_process(video_info, finish_dir)
-    par2_process(finish_dir)
-    temp_init()
+    try:
+        urls = urls_preprocess()
+        video_info, finish_dir = download(urls)
+        merge(finish_dir)
+        json_process(video_info, finish_dir)
+        par2_process(finish_dir)
+    except KeyboardInterrupt:
+        sys.exit('\n')
+    finally:
+        temp_init()
