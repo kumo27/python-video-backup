@@ -8,48 +8,14 @@ from yt_dlp import YoutubeDL
 from yt_dlp.utils import DownloadError
 
 #下載
-def download(urls) -> tuple[dict, Path]:
+def download(url, ydl_opts) -> tuple[dict, Path]:
     #變數定義
     video_info = {} #影片資訊
-    ydl_opts = {
-        'format': 'bv,ba', #最佳品質
-        'outtmpl': {
-            'default': str(temp_dir) + '/%(format_id)s.%(ext)s', 
-            'infojson': str(temp_dir) + '/', 
-            'subtitle': str(temp_dir) + '/', 
-            'description': str(temp_dir) + '/', 
-        }, #對命名的處理
-        'writeinfojson': True, #寫入影片資訊
-        'getcomments': True, #寫入留言
-        'writesubtitles': True, #寫入字幕
-        'subtitleslangs': ['all'], #指定字幕範圍(全部，包含聊天室)
-    } #下載選項
-    browser_opt = ['不匯入', 'chrome', 'edge', 'brave', 'firefox'] #瀏覽器選項
-
-    #生成詢問內容
-    ask_str = '\033c' + '選擇是否從瀏覽器匯入cookie:\n'
-    for i, browser in enumerate(browser_opt):
-        ask_str += f'{i}: {browser}\n'
-    ask_str += ': '
-
-    #選擇從瀏覽器匯入cookie
-    while True:
-        browser_key = input(ask_str).strip()
-        if browser_key.isdecimal() and int(browser_key) < len(browser_opt):
-            if int(browser_key) > 0:
-                ydl_opts['cookiesfrombrowser'] = (browser_opt[int(browser_key)], )
-            print('\033c', end='')
-            break
-        else:
-            print('\033c')
-            print('輸入無效，請檢查輸入後再試一次')
-            time.sleep(2)
-            
 
     #下載
     with YoutubeDL(ydl_opts) as ydl: # pyright: ignore[reportArgumentType]
         try:
-            ydl.download(urls)
+            ydl.download(url)
         except DownloadError as e:
             if 'Sign in to confirm you’re not a bot.' in str(e):
                 print('\nyoutube要求登入，請考慮匯入瀏覽器cookie')

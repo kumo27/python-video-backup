@@ -10,7 +10,7 @@ from contextlib import chdir
 def merge(finish_dir: Path):
     #變數定義
     input_video_file: dict[Path, None] = {} #輸入ffmpeg的檔案
-    ffmpeg_options: list = [] #ffmpeg的輸出參數
+    ffmpeg_opts: list = [] #ffmpeg的輸出參數
     
     #合併影片與字幕
     for file_path in temp_dir.iterdir():
@@ -21,17 +21,17 @@ def merge(finish_dir: Path):
 
     #處理ffmpeg map
     for i in range(0, len(input_video_file)):
-        ffmpeg_options += ['-map', str(i)]
+        ffmpeg_opts += ['-map', str(i)]
 
     #ffmpeg輸出參數合併
-    ffmpeg_options += [
+    ffmpeg_opts += [
         '-attach', (temp_dir / 'cover.jpg'), '-metadata:s:t', 'mimetype=image/jpeg', 
         '-c', 'copy', 
         '-loglevel', 'warning', '-hide_banner', '-stats'
     ]
 
     #影片元數據清理參數
-    meta_clear_options = [
+    meta_clear_opts = [
         'mkvpropedit', (finish_dir / 'video.mkv'), 
         '--delete-track-statistics-tags', 
         '--edit', 'info', 
@@ -45,12 +45,12 @@ def merge(finish_dir: Path):
     #輸出
     ff = FFmpeg(
         inputs = input_video_file, # pyright: ignore[reportArgumentType]
-        outputs = {(finish_dir / 'video.mkv'): ffmpeg_options}, # pyright: ignore[reportArgumentType]
+        outputs = {(finish_dir / 'video.mkv'): ffmpeg_opts}, # pyright: ignore[reportArgumentType]
     )
     print()
     ff.run()
     print()
-    subprocess.run(meta_clear_options)
+    subprocess.run(meta_clear_opts)
 
     #刪除輸入檔案
     Path.unlink(temp_dir / 'cover.jpg')
@@ -105,7 +105,7 @@ def par2_process(finish_dir: Path):
     #切換工作路徑
     with chdir(finish_dir):
         #par2參數設定
-        par2_options = [
+        par2_opts = [
             'par2', 'c', 
             '-r10', '-b8000', '-n1', 
             'check.par2', 
@@ -114,11 +114,11 @@ def par2_process(finish_dir: Path):
         #遞歸檔案清單
         for f in finish_dir.iterdir():
             f = f.relative_to(Path.cwd())
-            par2_options += [f]
+            par2_opts += [f]
         
         #較驗檔創建與驗證
         print()
-        subprocess.run(par2_options)
+        subprocess.run(par2_opts)
         par2_verify = subprocess.run(['par2', 'v', 'check.par2'], capture_output=True, text=True)
         if 'All files are correct, repair is not required.' not in par2_verify.stdout:
             for f in finish_dir.glob('*.par2'):
