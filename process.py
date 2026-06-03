@@ -2,8 +2,9 @@ import json
 import subprocess
 from ffmpy import FFmpeg
 from pathlib import Path
-from config import temp_dir
 from datetime import date
+from config import temp_dir
+from contextlib import chdir
 
 #合併
 def merge(finish_dir: Path):
@@ -101,22 +102,25 @@ def json_process(video_info: dict, finish_dir: Path):
 
 #par2處理
 def par2_process(finish_dir: Path):
-    #par2參數設定
-    par2_options = [
-        'par2', 'c', 
-        '-r10', '-b8000', '-n1', 
-        (finish_dir / 'check.par2'), 
-    ]
+    #切換工作路徑
+    with chdir(finish_dir):
+        #par2參數設定
+        par2_options = [
+            'par2', 'c', 
+            '-r10', '-b8000', '-n1', 
+            'check.par2', 
+        ]
 
-    #遞歸檔案清單
-    for f in finish_dir.iterdir():
-        par2_options += [f]
-    
-    #較驗檔創建與驗證
-    print()
-    subprocess.run(par2_options)
-    par2_verify = subprocess.run(['par2', 'v', (finish_dir / 'check.par2')], capture_output=True, text=True)
-    if 'All files are correct, repair is not required.' not in par2_verify.stdout:
-        for f in finish_dir.glob('*.par2'):
-            f.unlink()
-        print('par2檔案未能成功創建，請嘗試手動創建')
+        #遞歸檔案清單
+        for f in finish_dir.iterdir():
+            f = f.relative_to(Path.cwd())
+            par2_options += [f]
+        
+        #較驗檔創建與驗證
+        print()
+        subprocess.run(par2_options)
+        par2_verify = subprocess.run(['par2', 'v', 'check.par2'], capture_output=True, text=True)
+        if 'All files are correct, repair is not required.' not in par2_verify.stdout:
+            for f in finish_dir.glob('*.par2'):
+                f.unlink()
+            print('par2檔案未能成功創建，請嘗試手動創建')
