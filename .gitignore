@@ -13,3 +13,5 @@ test.py
 urls.txt
 temp/
 download/
+
+README.md merge=ours
