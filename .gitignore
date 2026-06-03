@@ -12,3 +12,5 @@ wheels/
 test.py
 temp/
 download/
+
+README.md merge=ours
