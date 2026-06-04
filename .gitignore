@@ -10,7 +10,9 @@ wheels/
 .venv
 
 test.py
+urls.txt
 temp/
 download/
+log/
 
 README.md merge=ours
