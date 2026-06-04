@@ -1,14 +1,16 @@
-import sys
-import time
 import json
+import logging
 import requests
 from pathlib import Path
+from config import log_root
 from config import temp_dir
 from yt_dlp import YoutubeDL
 from yt_dlp.utils import DownloadError
 
+logger = logging.getLogger(f'{log_root}.{__name__}')
+
 #下載
-def download(url, ydl_opts) -> tuple[dict, Path]:
+def download(url, ydl_opts):
     #變數定義
     video_info = {} #影片資訊
 
@@ -18,20 +20,24 @@ def download(url, ydl_opts) -> tuple[dict, Path]:
             ydl.download(url)
         except DownloadError as e:
             if 'Sign in to confirm you’re not a bot.' in str(e):
-                print('\nyoutube要求登入，請考慮匯入瀏覽器cookie')
-                sys.exit()
+                print()
+                logger.error('youtube要求登入，請考慮匯入瀏覽器cookie')
+            elif 'HTTP Error 403: Forbidden' in str(e):
+                print()
+                logger.error('error 403，禁止訪問，如果先前未匯入cookie請嘗試匯入')
             elif 'Read timed out.' in str(e):
-                print('\n網路連線逾時，請檢查網路後再試一次')
-                sys.exit()
+                print()
+                logger.error('網路連線逾時，請檢查網路後再試一次')
             elif 'Unable to download API page' in str(e):
-                print('\nAPI解析失敗，請檢查網路後再試一次')
-                sys.exit()
+                print()
+                logger.error('API解析失敗，請檢查網路後再試一次')
             elif 'is not a valid URL' in str(e):
-                print('\n無效連結，請檢查連結後再試一次')
-                sys.exit()
+                print()
+                logger.error('無效連結，請檢查連結後再試一次')
             else:
-                print('\n意外錯誤，請考慮將以下錯誤回報\n' + str(e))
-                sys.exit()
+                print()
+                logger.error('未測試出的錯誤，請考慮將以下錯誤回報\n' + str(e))
+            return None
 
     #重命名部份檔案
     for file_path in temp_dir.iterdir():
@@ -49,4 +55,4 @@ def download(url, ydl_opts) -> tuple[dict, Path]:
     #下載縮圖
     Path.write_bytes((temp_dir / 'cover.jpg'), requests.get(video_info['thumbnail']).content)
 
-    return video_info, finish_dir
+    return {'video_info': video_info, 'finish_dir': finish_dir}

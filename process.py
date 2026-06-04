@@ -1,10 +1,14 @@
 import json
+import logging
 import subprocess
 from ffmpy import FFmpeg
 from pathlib import Path
 from datetime import date
+from config import log_root
 from config import temp_dir
 from contextlib import chdir
+
+logger = logging.getLogger(f'{log_root}.{__name__}')
 
 #合併
 def merge(finish_dir: Path):
@@ -48,6 +52,7 @@ def merge(finish_dir: Path):
         outputs = {(finish_dir / 'video.mkv'): ffmpeg_opts}, # pyright: ignore[reportArgumentType]
     )
     print()
+    logger.debug(ff.cmd)
     ff.run()
     print()
     subprocess.run(meta_clear_opts)
@@ -116,11 +121,13 @@ def par2_process(finish_dir: Path):
             f = f.relative_to(Path.cwd())
             par2_opts += [f]
         
-        #較驗檔創建與驗證
+        #校驗檔創建與驗證
         print()
+        logger.debug(par2_opts)
         subprocess.run(par2_opts)
         par2_verify = subprocess.run(['par2', 'v', 'check.par2'], capture_output=True, text=True)
         if 'All files are correct, repair is not required.' not in par2_verify.stdout:
             for f in finish_dir.glob('*.par2'):
                 f.unlink()
-            print('par2檔案未能成功創建，請嘗試手動創建')
+            print()
+            logger.error('par2檔案未能成功創建，請嘗試手動創建')

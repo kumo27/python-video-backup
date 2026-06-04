@@ -1,9 +1,47 @@
 import sys
 import time
+import logging
 import process
-import downdold
+import downloader
 from pathlib import Path
+from config import log_root
 from config import temp_dir
+
+#log檔案變數
+log_dir: Path = Path.cwd() / 'log'
+
+#主log初始化
+log_dir.mkdir(exist_ok=True)
+logger = logging.getLogger(log_root)
+logger.setLevel(logging.DEBUG)
+
+#控制台設定
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.WARNING)
+console_fmt = logging.Formatter('[%(levelname)s] %(message)s')
+console_handler.setFormatter(console_fmt)
+logger.addHandler(console_handler)
+    
+#log檔案設定
+file_handler = logging.FileHandler((log_dir / 'full_log.log'), 'w', 'utf-8')
+file_handler.setLevel(logging.DEBUG)
+file_fmt = logging.Formatter(
+    '%(asctime)s [%(levelname)s] %(name)s:%(lineno)d - %(message)s'
+)
+file_handler.setFormatter(file_fmt)
+logger.addHandler(file_handler)
+
+#失敗連結log初始化
+fail_urls_logger = logging.getLogger('fail_urls')
+fail_urls_logger.propagate = False
+fail_urls_logger.setLevel(logging.DEBUG)
+
+#失敗連結log檔案設定
+file_handler = logging.FileHandler((log_dir / 'fail_urls.txt'),'w', 'utf-8')
+file_handler.setLevel(logging.DEBUG)
+file_fmt = logging.Formatter('%(message)s')
+file_handler.setFormatter(file_fmt)
+fail_urls_logger.addHandler(file_handler)
 
 #初始化
 def temp_init():
@@ -72,15 +110,22 @@ def browser():
 
 if __name__ == '__main__':
     temp_init()
-    urls = urls_preprocess()
-    ydl_opts = browser()
-    for url in urls:
-        try:
-            video_info, finish_dir = downdold.download(url, ydl_opts)
-            process.merge(finish_dir)
-            process.json_process(video_info, finish_dir)
-            process.par2_process(finish_dir)
-        except KeyboardInterrupt:
-            sys.exit('\n')
-        finally:
+    try:
+        urls = urls_preprocess()
+        ydl_opts = browser()
+        for url in urls:
+            if url.strip() == '': continue
+            get_dict = downloader.download(url, ydl_opts)
+            if get_dict is None:
+                fail_urls_logger.error(url.strip())
+                continue
+            process.merge(get_dict['finish_dir'])
+            process.json_process(get_dict['video_info'], get_dict['finish_dir'])
+            process.par2_process(get_dict['finish_dir'])
             temp_init()
+    except KeyboardInterrupt:
+        temp_init()
+        sys.exit()
+    finally:
+        temp_init()
+        sys.exit()
