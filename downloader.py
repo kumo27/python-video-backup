@@ -16,24 +16,24 @@ def download(url, ydl_opts):
 
     #下載
     with YoutubeDL(ydl_opts) as ydl: # pyright: ignore[reportArgumentType]
+        print('\033c', end='')
         try:
             ydl.download(url)
         except DownloadError as e:
-            if 'Sign in to confirm you’re not a bot.' in str(e):
-                print()
-                logger.error('youtube要求登入，請考慮匯入瀏覽器cookie')
-            elif 'HTTP Error 403: Forbidden' in str(e):
-                print()
-                logger.error('error 403，禁止訪問，如果先前未匯入cookie請嘗試匯入')
-            elif 'Read timed out.' in str(e):
-                print()
-                logger.error('網路連線逾時，請檢查網路後再試一次')
-            elif 'Unable to download API page' in str(e):
-                print()
-                logger.error('API解析失敗，請檢查網路後再試一次')
-            elif 'is not a valid URL' in str(e):
-                print()
-                logger.error('無效連結，請檢查連結後再試一次')
+            #錯誤字典
+            error_dict ={
+                'Sign in to confirm you’re not a bot.': 'youtube要求登入，請考慮匯入瀏覽器cookie', 
+                'HTTP Error 403: Forbidden': 'error 403，禁止訪問，如果先前未匯入cookie請嘗試匯入', 
+                'Read timed out.': '網路連線逾時，請檢查網路後再試一次', 
+                'Failed to resolve': '解析失敗，請檢查網路後再試一次', 
+                'is not a valid URL': '無效連結，請檢查連結後再試一次'
+            }
+
+            for error, msg in error_dict.items():
+                if error in str(e):
+                    print()
+                    logger.error(msg)
+                    break
             else:
                 print()
                 logger.error('未測試出的錯誤，請考慮將以下錯誤回報\n' + str(e))
