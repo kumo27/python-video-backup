@@ -26,7 +26,8 @@ def download(url, ydl_opts):
                 'HTTP Error 403: Forbidden': 'error 403，禁止訪問，如果先前未匯入cookie請嘗試匯入', 
                 'Read timed out.': '網路連線逾時，請檢查網路後再試一次', 
                 'Failed to resolve': '解析失敗，請檢查網路後再試一次', 
-                'is not a valid URL': '無效連結，請檢查連結後再試一次'
+                'is not a valid URL': '無效連結，請檢查連結後再試一次', 
+                'Connection reset by peer': 'error 104，連線被重置，請稍後重試'
             }
 
             for error, msg in error_dict.items():

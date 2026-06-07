@@ -108,12 +108,12 @@ def browser():
     return ydl_opts
 
 if __name__ == '__main__':
-    temp_init()
     try:
         urls = urls_preprocess()
         ydl_opts = browser()
         for url in urls:
             if url.strip() == '': continue
+            temp_init()
             get_dict = downloader.download(url, ydl_opts)
             if get_dict is None:
                 fail_urls_logger.error(url.strip())
@@ -121,10 +121,5 @@ if __name__ == '__main__':
             process.merge(get_dict['finish_dir'])
             process.json_process(get_dict['video_info'], get_dict['finish_dir'])
             process.par2_process(get_dict['finish_dir'])
-            temp_init()
     except KeyboardInterrupt:
-        temp_init()
-        sys.exit()
-    finally:
-        temp_init()
         sys.exit()
