@@ -15,17 +15,28 @@ def merge(finish_dir: Path):
     #變數定義
     input_video_file: dict[Path, None] = {} #輸入ffmpeg的檔案
     ffmpeg_opts: list = [] #ffmpeg的輸出參數
+    sub_lang: list = [] #後續的語言標籤
     
     #合併影片與字幕
     for file_path in temp_dir.iterdir():
-        if file_path.suffix not in ['.json', '.jpg', '.txt']:
+        logger.debug(f'temp資料夾檔案: {file_path.name}')
+        if file_path.suffix in ['.mp4', '.webm']:
+            logger.debug(f'影片或音訊檔: {file_path.name}')
+            input_video_file[file_path] = None
+        elif file_path.suffix in ['.vtt', '.str']:
+            logger.debug(f'字幕檔: {file_path.name}')
+            sub_lang += [file_path.stem]
             input_video_file[file_path] = None
         else:
+            logger.debug(f'其他: {file_path.name}')
             continue
 
     #處理ffmpeg map
     for i in range(0, len(input_video_file)):
         ffmpeg_opts += ['-map', str(i)]
+
+    for i, lang in enumerate(sub_lang):
+        ffmpeg_opts += [f'-metadata:s:s:{i}', f'language={lang}']
 
     #ffmpeg輸出參數合併
     ffmpeg_opts += [
@@ -109,6 +120,7 @@ def json_process(video_info: dict, finish_dir: Path):
 def par2_process(finish_dir: Path):
     #切換工作路徑
     with chdir(finish_dir):
+        logger.debug(f'切換工作目錄: {finish_dir}')
         #par2參數設定
         par2_opts = [
             'par2', 'c', 
