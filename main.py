@@ -99,7 +99,6 @@ def browser():
         if browser_key.isdecimal() and int(browser_key) < len(browser_opt):
             if int(browser_key) > 0:
                 ydl_opts['cookiesfrombrowser'] = (browser_opt[int(browser_key)], )
-            print('\033c', end='')
             break
         else:
             print('\033c')
