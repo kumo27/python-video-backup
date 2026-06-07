@@ -19,7 +19,6 @@ def merge(finish_dir: Path):
     
     #合併影片與字幕
     for file_path in temp_dir.iterdir():
-        logger.debug(f'temp資料夾檔案: {file_path.name}')
         if file_path.suffix in ['.mp4', '.webm']:
             logger.debug(f'影片或音訊檔: {file_path.name}')
             input_video_file[file_path] = None
