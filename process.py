@@ -1,4 +1,5 @@
 import json
+import time
 import logging
 import subprocess
 from ffmpy import FFmpeg
@@ -22,7 +23,7 @@ def merge(finish_dir: Path):
         if file_path.suffix in ['.mp4', '.webm']:
             logger.debug(f'影片或音訊檔: {file_path.name}')
             input_video_file[file_path] = None
-        elif file_path.suffix in ['.vtt', '.str']:
+        elif file_path.suffix in ['.vtt', '.srt']:
             logger.debug(f'字幕檔: {file_path.name}')
             sub_lang += [file_path.stem]
             input_video_file[file_path] = None
@@ -123,7 +124,7 @@ def par2_process(finish_dir: Path):
         #par2參數設定
         par2_opts = [
             'par2', 'c', 
-            '-r10', '-b8000', '-n1', 
+            '-r30', '-b10000', '-n1', 
             'check.par2', 
         ]
 
@@ -142,3 +143,4 @@ def par2_process(finish_dir: Path):
                 f.unlink()
             print()
             logger.error('par2檔案未能成功創建，請嘗試手動創建')
+            time.sleep(2)

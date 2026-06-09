@@ -1,4 +1,5 @@
 import json
+import time
 import logging
 import requests
 from pathlib import Path
@@ -34,10 +35,12 @@ def download(url, ydl_opts):
                 if error in str(e):
                     print()
                     logger.error(msg)
+                    time.sleep(2)
                     break
             else:
                 print()
                 logger.error('未測試出的錯誤，請考慮將以下錯誤回報\n' + str(e))
+                time.sleep(2)
             return None
 
     #重命名部份檔案

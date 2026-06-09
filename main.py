@@ -73,7 +73,8 @@ def urls_preprocess() -> list[str] | str:
 #瀏覽器ckookie處理
 def browser():
     ydl_opts = {
-        'format': 'bv,ba', #最佳品質
+        'format': 'bv,ba', #品質控制
+        'format_sort': ['res','vcodec:avc+vp9'], #微調後的排序
         'outtmpl': {
             'default': str(temp_dir) + '/%(format_id)s.%(ext)s', 
             'infojson': str(temp_dir) + '/', 
