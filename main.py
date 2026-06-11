@@ -1,11 +1,11 @@
 import sys
 import time
 import logging
-import process
 import downloader
 from pathlib import Path
 from config import log_root
 from config import temp_dir
+from process import PostProcess
 
 #log檔案變數
 log_dir: Path = Path.cwd() / 'log'
@@ -21,7 +21,7 @@ console_handler.setLevel(logging.WARNING)
 console_fmt = logging.Formatter('[%(levelname)s] %(message)s')
 console_handler.setFormatter(console_fmt)
 logger.addHandler(console_handler)
-    
+
 #log檔案設定
 file_handler = logging.FileHandler((log_dir / 'full_log.log'), 'w', 'utf-8')
 file_handler.setLevel(logging.DEBUG)
@@ -43,15 +43,15 @@ file_fmt = logging.Formatter('%(message)s')
 file_handler.setFormatter(file_fmt)
 fail_urls_logger.addHandler(file_handler)
 
-#初始化
 def temp_init():
+    '''temp資料夾初始化'''
     if temp_dir.exists():
         for f in temp_dir.iterdir():
             f.unlink()
     temp_dir.mkdir(exist_ok=True)
 
-#連結處理
-def urls_preprocess() -> list[str] | str:
+def urls_preprocess() -> list[str]:
+    '''影片連結預處理'''
     #變數定義
     urls_txt = Path.cwd() / 'urls.txt'
 
@@ -70,8 +70,8 @@ def urls_preprocess() -> list[str] | str:
     urls = [input('請輸入影片網址: ')]
     return urls
 
-#瀏覽器ckookie處理
-def browser():
+def dl_opt():
+    '''下載選項的設定與詢問'''
     ydl_opts = {
         'format': 'bv,ba', #品質控制
         'format_sort': ['res','vcodec:avc+vp9'], #微調後的排序
@@ -111,7 +111,7 @@ def browser():
 if __name__ == '__main__':
     try:
         urls = urls_preprocess()
-        ydl_opts = browser()
+        ydl_opts = dl_opt()
         for url in urls:
             if url.strip() == '': continue
             temp_init()
@@ -119,8 +119,9 @@ if __name__ == '__main__':
             if get_dict is None:
                 fail_urls_logger.error(url.strip())
                 continue
-            process.merge(get_dict['finish_dir'])
-            process.json_process(get_dict['video_info'], get_dict['finish_dir'])
-            process.par2_process(get_dict['finish_dir'])
+            process = PostProcess(temp_dir, get_dict['finish_dir'])
+            process.merge()
+            process.json_process(get_dict['video_info'])
+            process.par2_process()
     except KeyboardInterrupt:
         sys.exit()
