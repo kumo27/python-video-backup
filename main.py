@@ -70,7 +70,7 @@ def urls_preprocess() -> list[str]:
     urls = [input('請輸入影片網址: ')]
     return urls
 
-def dl_opt():
+def dl_opt_ask():
     '''下載選項的設定與詢問'''
     ydl_opts = {
         'format': 'bv,ba', #品質控制
@@ -106,12 +106,25 @@ def dl_opt():
             print('輸入無效，請檢查輸入後再試一次')
             time.sleep(2)
     
-    return ydl_opts
+    while True:
+        ask_str = input('是否僅更新留言(y/n): ').strip().lower()
+        if ask_str == 'y':
+            ydl_opts['skip_download'] = True
+            comment_update = True
+            break
+        elif ask_str == 'n':
+            comment_update = False
+            break
+        print('\033c', end='')
+        print('無效參數')
+        time.sleep(1)
+    
+    return ydl_opts, comment_update
 
 if __name__ == '__main__':
     try:
         urls = urls_preprocess()
-        ydl_opts = dl_opt()
+        ydl_opts, comment_update = dl_opt_ask()
         for url in urls:
             if url.strip() == '': continue
             temp_init()
@@ -119,9 +132,10 @@ if __name__ == '__main__':
             if get_dict is None:
                 fail_urls_logger.error(url.strip())
                 continue
-            process = PostProcess(temp_dir, get_dict['finish_dir'])
+            process = PostProcess(temp_dir, get_dict['finish_dir'], comment_update)
             process.merge()
+            check_error = process.par2_verify()
             process.json_process(get_dict['video_info'])
-            process.par2_process()
+            process.par2_create(check_error)
     except KeyboardInterrupt:
         sys.exit()

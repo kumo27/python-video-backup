@@ -12,12 +12,17 @@ logger = logging.getLogger(f'{log_root}.{__name__}')
 
 class PostProcess:
     '''後處理模塊'''
-    def __init__(self, temp_dir: Path, finish_dir: Path) -> None:
+    def __init__(self, temp_dir: Path, finish_dir: Path, comment_update: bool) -> None:
         self.temp_dir = temp_dir
         self.finish_dir = finish_dir
+        self.comment_update = comment_update
 
     def merge(self):
         '''影片、音訊與字幕合併，並包含元數據清理'''
+
+        #如果僅更新留言就跳出
+        if self.comment_update: return
+
         #變數定義
         input_video_file: dict[Path, None] = {} #輸入ffmpeg的檔案
         ffmpeg_opts: list = [] #ffmpeg的輸出參數
@@ -46,7 +51,7 @@ class PostProcess:
         #ffmpeg輸出參數合併
         ffmpeg_opts += [
             '-attach', (self.temp_dir / 'cover.jpg'), '-metadata:s:t', 'mimetype=image/jpeg', 
-            '-c', 'copy', 
+            '-c', 'copy', '-y', 
             '-loglevel', 'warning', '-hide_banner', '-stats'
         ]
 
@@ -80,6 +85,7 @@ class PostProcess:
 
     def json_process(self, video_info: dict):
         '''元數據json的處理模塊'''
+
         #變數定義
         output_comment: dict = {} #留言內文
         output_live_chat: dict = {} #聊天室內文
@@ -103,15 +109,18 @@ class PostProcess:
             f'{video_info['description']}'
         )
         
-        #說明欄處理
-        with open((self.finish_dir / 'info.txt'), 'w') as f:
-            f.write(output_info)
-
         #留言json處理與寫入
         for i, comment in enumerate(video_info['comments']):
             output_comment[f'第{i+1}條留言'] = comment
         with open((self.finish_dir / f'comment_{date.today().strftime('%Y%m%d')}.json'), 'w') as f:
             json.dump(output_comment, f, indent=4, ensure_ascii=False)
+        
+        #如果僅更新留言就跳出
+        if self.comment_update: return
+
+        #說明欄處理
+        with open((self.finish_dir / 'info.txt'), 'w') as f:
+            f.write(output_info)
 
         #聊天室json處理與寫入
         if Path.exists(self.temp_dir / 'live_chat.json'):
@@ -121,11 +130,22 @@ class PostProcess:
             with open((self.finish_dir / 'live_chat.json'), 'w') as f:
                 json.dump(output_live_chat, f, indent=4, ensure_ascii=False)
 
-    def par2_process(self):
+    def par2_create(self, check_error: bool):
         '''par2檔案處理模塊'''
+
+        #檢查par2驗證回傳值
+        if check_error:
+            logger.error('檢查到par2檔案出現問題，建議重新下載檔案')
+            time.sleep(2)
+            return
+        
+        #先清除par2
+        for f in self.finish_dir.glob('*.par2'): f.unlink()
+
         #切換工作路徑
         with chdir(self.finish_dir):
             logger.debug(f'切換工作目錄: {self.finish_dir}')
+
             #par2參數設定
             par2_opts = [
                 'par2', 'c', 
@@ -144,8 +164,41 @@ class PostProcess:
             subprocess.run(par2_opts)
             par2_verify = subprocess.run(['par2', 'v', 'check.par2'], capture_output=True, text=True)
             if par2_verify.returncode != 0:
-                for f in self.finish_dir.glob('*.par2'):
-                    f.unlink()
+                for f in self.finish_dir.glob('*.par2'): f.unlink()
                 print()
                 logger.error('par2檔案未能成功創建，請嘗試手動創建')
                 time.sleep(2)
+
+    def par2_verify(self) -> bool:
+        '''檔案更新前驗證與修復'''
+
+        #如果不更新留言直接跳出
+        if not self.comment_update: return False
+        
+        with chdir(self.finish_dir):
+            logger.debug(f'切換工作目錄: {self.finish_dir}')
+            par2_verify = subprocess.run(['par2', 'v', 'check.par2'], capture_output=True, text=True)
+            match par2_verify.returncode:
+                #清理檔案並繼續
+                case 0:
+                    for f in self.finish_dir.glob('comment*'): f.unlink()
+                    return False
+                #嘗試修復並繼續
+                case 1:
+                    par2_repair = subprocess.run(['par2', 'r', 'check.par2'], capture_output=True, text=True)
+                    if par2_repair.returncode != 0:
+                        logger.error('檔案自動修復失敗，請嘗試重新下載')
+                        return True
+                    for f in [*self.finish_dir.glob('comment*'), *self.finish_dir.glob('*.1')]: f.unlink()
+                    return False
+                #無法修復，跳過
+                case 2:
+                    logger.error('檔案嚴重損毀，請嘗試重新下載')
+                    time.sleep(2)
+                    return True
+                #未知狀況
+                case _:
+                    logger.error('未測試出的錯誤')
+                    logger.error('\n' + par2_verify.stderr)
+                    time.sleep(2)
+                    return True

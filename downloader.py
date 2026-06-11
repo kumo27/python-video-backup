@@ -39,7 +39,8 @@ def download(url, ydl_opts):
                     break
             else:
                 print()
-                logger.error('未測試出的錯誤，請考慮將以下錯誤回報\n' + str(e))
+                logger.error('未測試出的錯誤，請考慮將以下錯誤回報')
+                logger.error('\n' + str(e))
                 time.sleep(2)
             return None
 
