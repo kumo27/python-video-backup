@@ -1,0 +1,27 @@
+[project]
+name = "python-video-backup"
+version = "1.0"
+description = "個人用的影片備份腳本"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "ffmpy>=1.0.0",
+    "requests>=2.34.2",
+    "tqdm>=4.69.0",
+    "yt-dlp[default]>=2026.7.4",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.16.00",
+]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+ignore = []
+
+[tool.ruff.format]
+quote-style = "double"
