@@ -31,7 +31,8 @@ class DL:
             "Join this channel to get access to members-only content": "加入頻道會員，下載會員影片",
         }  # 錯誤字典
         self.ydl_opts: dict[str, Any] = {
-            "format": "bv,ba",  # 品質控制
+            "format": "bv+ba",  # 品質控制
+            "merge_output_format": "mkv",  # 輸出mkv
             "format_sort": ("res", "vcodec:avc+vp9"),  # 微調後的排序
             "writeinfojson": True,  # 寫入影片資訊
             "getcomments": True,  # 寫入留言

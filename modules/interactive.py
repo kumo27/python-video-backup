@@ -1,7 +1,7 @@
 from typing import Any
 
 from .config import urls_txt_path
-from .init import answer_error
+from .tool import answer_error
 
 
 class Interactive:

@@ -5,7 +5,6 @@ description = "個人用的影片備份腳本"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
-    "ffmpy>=1.0.0",
     "requests>=2.34.2",
     "tqdm>=4.69.0",
     "yt-dlp[default]>=2026.7.4",

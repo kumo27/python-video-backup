@@ -7,7 +7,6 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
-from ffmpy import FFmpeg
 from tqdm import tqdm
 
 from .config import download_dir, fail_urls_log_root, log_root, max_workers
@@ -117,15 +116,18 @@ class PostProcessData:
     ):
         # 取得影片資料
         with open(tmp_dir / ".info.json", encoding="utf-8") as f:
-            video_info = json.load(f)
+            video_info: dict = json.load(f)
 
         # 對預設值的處理
         if finish_dir is None:
             # 路徑合法化
             clean_title = str.translate(video_info["title"], str.maketrans("/\\", "⧸⧹"))
             clean_channel = str.translate(video_info["channel"], str.maketrans("/\\", "⧸⧹"))
+            release_date = video_info.get("release_date") or video_info.get("upload_date")
             # 合成完成資料夾
-            finish_dir = download_dir / clean_channel / (clean_title + f"_{video_info['id']}")
+            finish_dir = (
+                download_dir / clean_channel / (f"{release_date}_{clean_title}_{video_info['id']}")
+            )
 
         return cls(tmp_dir, comment_update, miss_program, video_info, finish_dir)
 
@@ -147,72 +149,35 @@ class PostProcess:
 
         self.data.finish_dir.mkdir(parents=True, exist_ok=True)
 
-    def merge(self):
+    def meta_clear(self):
         """影片、音訊與字幕合併，並包含元數據清理"""
         # 如果僅更新留言就跳出
-        if self.data.comment_update:
+        if self.data.comment_update or "mkvpropedit" in self.data.miss_program:
             return
 
-        logger.debug("進入合併函式")
-
-        # 變數定義
-        input_video_file: dict[Path, None] = {}  # 輸入ffmpeg的檔案
-        ffmpeg_opts: list = []  # ffmpeg參數
-        sub_lang: list[str] = []  # 字幕語言標籤
-
-        # ffmpeg加入影片與字幕
-        for file_path in self.data.tmp_dir.iterdir():
-            if file_path.suffix in (".mp4", ".m4a", ".webm"):
-                logger.debug(f"影片或音訊檔: {file_path.name}")
-                input_video_file[file_path] = None
-            elif file_path.suffix in (".vtt", ".srt", ".ass"):
-                logger.debug(f"字幕檔: {file_path.name}")
-                sub_lang.append(file_path.stem)
-                input_video_file[file_path] = None
-            else:
-                logger.debug(f"其他: {file_path.name}")
-
-        # 處理ffmpeg map
-        for i in range(0, len(input_video_file)):
-            ffmpeg_opts += ["-map", str(i)]
-
-        # 處理字幕語言標籤
-        for i, lang in enumerate(sub_lang):
-            ffmpeg_opts += [f"-metadata:s:s:{i}", f"language={lang}"]
-
-        # ffmpeg輸出參數合併
-        # fmt: off
-        ffmpeg_opts += [
-            "-metadata:s:t", "mimetype=image/jpeg",
-            "-c", "copy",
-            "-y",
-            "-loglevel", "quiet",
-        ]
-        # fmt: on
-
-        # 影片合併
-        ff = FFmpeg(
-            inputs=input_video_file,  # pyright: ignore[reportArgumentType]
-            outputs={(self.data.finish_dir / "video.mkv"): ffmpeg_opts},  # pyright: ignore[reportArgumentType]
-        )
-        logger.debug(ff.cmd)
-        ff.run()
+        logger.debug("進入清理函式")
 
         # 影片元數據清理
-        if "mkvpropedit" not in self.data.miss_program:
-            # fmt: off
-            meta_clear_cmd = (
-                "mkvpropedit", (self.data.finish_dir / "video.mkv"),
-                "--delete-track-statistics-tags",
-                "--edit", "info",
-                "--delete", "date",
-                "--delete", "title",
-                "--tags", "all:",
-                "--set", "writing-application=",
-                "--set", "muxing-application=",
-            )
-            # fmt: on
-            subprocess.run(meta_clear_cmd, capture_output=True)
+        # fmt: off
+        meta_clear_cmd = (
+            "mkvpropedit", (self.data.finish_dir / "video.mkv"),
+            "--delete-track-statistics-tags",
+            "--edit", "info",
+            "--delete", "date",
+            "--delete", "title",
+            "--tags", "all:",
+            "--set", "writing-application=",
+            "--set", "muxing-application=",
+        )
+        # fmt: on
+        subprocess.run(meta_clear_cmd, capture_output=True)
+
+    def move(self):
+        for file_path in self.data.tmp_dir.iterdir():
+            if file_path.suffix == ".mkv":
+                file_path.move(self.data.finish_dir / "video.mkv")
+            elif file_path.suffix in (".srt", ".ass", ".vtt"):
+                file_path.move_into(self.data.finish_dir)
 
     def jxl_conversion(self):
         if "cjxl" not in self.data.miss_program:

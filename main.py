@@ -8,11 +8,9 @@ from tqdm import tqdm
 
 from modules.config import fail_urls_log_root, log_root, max_workers, temp_dir
 from modules.downloader import DL
-from modules.init import Init
+from modules.init import main_init
 from modules.interactive import Interactive
 from modules.process import PostProcess, PostProcessData, urls_preprocess
-
-init = Init()
 
 logger = logging.getLogger(log_root)
 fail_urls_logger = logging.getLogger(fail_urls_log_root)
@@ -35,7 +33,8 @@ def main(url: str):
     # 後處理
     data = PostProcessData.data_process(tmp_dir, user_parameters.comment_update, miss_program)
     process = PostProcess(data)
-    process.merge()
+    process.meta_clear()
+    process.move()
     process.json_process()
     return process, tmp
 
@@ -43,14 +42,18 @@ def main(url: str):
 if __name__ == "__main__":
     try:
         # 預處理
-        miss_program = init.main_init()
+        miss_program = main_init()
         user_parameters = Interactive()
         user_parameters.main_ask()
         dl = DL(user_parameters.ydl_update_opts)
         urls = urls_preprocess(user_parameters.urls, dl)
 
         with (
-            tqdm(total=len(urls), desc="所有影片下載中") as pbar,
+            tqdm(
+                total=len(urls),
+                desc="所有影片下載中",
+                bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt}",
+            ) as pbar,
             ThreadPoolExecutor(max_workers) as executor,
         ):
             work = (executor.submit(main, url) for url in urls)
