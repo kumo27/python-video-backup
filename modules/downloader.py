@@ -8,9 +8,7 @@ import requests
 from yt_dlp import YoutubeDL
 from yt_dlp.utils import DownloadError
 
-from .config import log_root
-
-logger = logging.getLogger(f"{log_root}.{__name__}")
+logger = logging.getLogger(__name__)
 
 
 class DL:

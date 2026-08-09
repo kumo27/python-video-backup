@@ -1,18 +1,17 @@
 import logging
+import logging.config
 import subprocess
-from shutil import rmtree
 from sys import exit
 
-from . import config
+from .config import LOGGING_CONFIG, log_dir
 from .tool import answer_error, clear_terminal
 
-logger = logging.getLogger(config.log_root)
+logger = logging.getLogger(__name__)
 
 
 def main_init():
     """總初始化"""
     log_init()
-    temp_init()
     miss_program = init_check()
     clear_terminal()
 
@@ -21,16 +20,8 @@ def main_init():
 
 def log_init():
     """log初始化"""
-    config.log_dir.mkdir(exist_ok=True)
-    config.full_log()
-    config.fail_urls_log()
-
-
-def temp_init():
-    """temp資料夾初始化"""
-    rmtree(config.temp_dir, ignore_errors=True)
-    config.temp_dir.unlink(missing_ok=True)
-    config.temp_dir.mkdir(exist_ok=True)
+    log_dir.mkdir(exist_ok=True)
+    logging.config.dictConfig(LOGGING_CONFIG)
 
 
 def init_check() -> tuple[str, ...]:

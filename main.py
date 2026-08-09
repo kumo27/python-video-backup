@@ -6,7 +6,7 @@ from tempfile import TemporaryDirectory
 
 from tqdm import tqdm
 
-from modules.config import fail_urls_log_root, log_root, max_workers, temp_dir
+from modules.config import fail_urls_log_root, max_workers
 from modules.downloader import DL
 from modules.init import main_init
 from modules.interactive import Interactive
@@ -14,7 +14,7 @@ from modules.process.data_process import PostProcessData
 from modules.process.post_process import PostProcess
 from modules.process.preprocess import urls_preprocess
 
-logger = logging.getLogger(log_root)
+logger = logging.getLogger("modules")
 fail_urls_logger = logging.getLogger(fail_urls_log_root)
 
 
@@ -35,7 +35,7 @@ def io_intensive_preprocess_workflow(tmp_path: Path):
 
 def main_workflow(url: str):
     # 暫存區創建
-    tmp = TemporaryDirectory(dir=temp_dir)
+    tmp = TemporaryDirectory(prefix="python_backup_")
     tmp_path = Path(tmp.name)
 
     dl_error = dl_workflow(tmp_path, url)

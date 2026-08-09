@@ -1,11 +1,10 @@
 import logging
 import subprocess
 
-from ..config import log_root
 from . import file_operation
 from .data_process import PostProcessData
 
-logger = logging.getLogger(f"{log_root}.{__name__}")
+logger = logging.getLogger(__name__)
 
 
 def par2_create(data: PostProcessData, check_error: bool):

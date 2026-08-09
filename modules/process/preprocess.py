@@ -4,10 +4,10 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from tqdm import tqdm
 
-from ..config import fail_urls_log_root, log_root, max_workers
+from ..config import fail_urls_log_root, max_workers
 from ..downloader import DL
 
-logger = logging.getLogger(f"{log_root}.{__name__}")
+logger = logging.getLogger(__name__)
 fail_urls_logger = logging.getLogger(fail_urls_log_root)
 
 

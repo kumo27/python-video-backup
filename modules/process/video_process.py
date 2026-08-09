@@ -1,10 +1,9 @@
 import logging
 import subprocess
 
-from ..config import log_root
 from .data_process import PostProcessData
 
-logger = logging.getLogger(f"{log_root}.{__name__}")
+logger = logging.getLogger(__name__)
 
 
 def meta_clear(data: PostProcessData):

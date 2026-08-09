@@ -3,10 +3,9 @@ import logging
 from datetime import datetime
 from pathlib import Path
 
-from ..config import log_root
 from .data_process import PostProcessData
 
-logger = logging.getLogger(f"{log_root}.{__name__}")
+logger = logging.getLogger(__name__)
 
 
 def comment_process(data: PostProcessData):
