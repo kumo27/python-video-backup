@@ -26,14 +26,14 @@ class PostProcess:
 
         self.data.finish_dir.mkdir(parents=True, exist_ok=True)
 
-    def in_async(self):
+    def meta_process_and_clean(self):
         meta_clear(self.data)
         info_process(self.data)
         comment_process(self.data)
         live_chat_process(self.data)
         move(self.data)
 
-    def not_in_async(self, tmp: TemporaryDirectory):
+    def compress_verify(self, tmp: TemporaryDirectory):
         self._cover_jxl_conversion()
         tmp.cleanup()
         check_error = par2_verify(self.data)

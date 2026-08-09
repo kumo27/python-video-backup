@@ -28,6 +28,10 @@ def urls_classification(urls: list[str]):
 
     # 分離播放清單或頻道網址
     for url in urls:
+        # 空字串跳出
+        if url.strip() == "":
+            continue
+
         # 播放清單或頻道網址
         re_return = re.search(
             (
