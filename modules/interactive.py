@@ -26,13 +26,16 @@ class Interactive:
         # 選擇從瀏覽器匯入cookie
         for _ in range(5):
             browser_key = input(ask_str).strip()
-            if browser_key.isdecimal() and int(browser_key) < len(self.browser_tuple):
-                if int(browser_key) != 0:
-                    self.ydl_update_opts["cookiesfrombrowser"] = (
-                        self.browser_tuple[int(browser_key)],
-                    )
+
+            if not browser_key.isdecimal():
+                answer_error()
+            elif int(browser_key) == 0:
                 break
-            answer_error()
+            elif int(browser_key) < len(self.browser_tuple):
+                self.ydl_update_opts["cookiesfrombrowser"] = (self.browser_tuple[int(browser_key)],)
+                break
+            else:
+                answer_error()
         else:
             print("無效輸入過多，使用預設設定")
 

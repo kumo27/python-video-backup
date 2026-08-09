@@ -3,10 +3,10 @@ import subprocess
 from shutil import rmtree
 from sys import exit
 
-from .config import Log, log_root, temp_dir
+from . import config
 from .tool import answer_error, clear_terminal
 
-logger = logging.getLogger(log_root)
+logger = logging.getLogger(config.log_root)
 
 
 def main_init():
@@ -21,16 +21,16 @@ def main_init():
 
 def log_init():
     """log初始化"""
-    log = Log()
-    log.full_log()
-    log.fail_urls_log()
+    config.log_dir.mkdir(exist_ok=True)
+    config.full_log()
+    config.fail_urls_log()
 
 
 def temp_init():
     """temp資料夾初始化"""
-    rmtree(temp_dir, ignore_errors=True)
-    temp_dir.unlink(missing_ok=True)
-    temp_dir.mkdir(exist_ok=True)
+    rmtree(config.temp_dir, ignore_errors=True)
+    config.temp_dir.unlink(missing_ok=True)
+    config.temp_dir.mkdir(exist_ok=True)
 
 
 def init_check() -> tuple[str, ...]:
