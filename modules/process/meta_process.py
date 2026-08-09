@@ -37,18 +37,13 @@ def info_process(data: PostProcessData):
     # 變數定義
     output_info: str = ""  # 影片資訊內文
 
-    # 獲取發布或上傳日期
-
-    date_input = data.video_info.get("release_date") or data.video_info.get("upload_date")
-    release_date = datetime.strptime(date_input, "%Y%m%d").strftime("%Y/%m/%d")  # pyright: ignore[reportArgumentType]
-
     # 影片資訊處理
     output_info = (
         "標題:\n"
         f"{data.video_info['title']}\n"
         "\n"
         "發布日期:\n"
-        f"{release_date}\n"
+        f"{data.release_date:%Y/%m/%d}\n"
         "\n"
         "影片網址:\n"
         f"{data.video_info['webpage_url']}\n"
