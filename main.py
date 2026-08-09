@@ -10,7 +10,9 @@ from modules.config import fail_urls_log_root, log_root, max_workers, temp_dir
 from modules.downloader import DL
 from modules.init import main_init
 from modules.interactive import Interactive
-from modules.process import PostProcess, PostProcessData, urls_preprocess
+from modules.process.data_process import PostProcessData
+from modules.process.post_process import PostProcess
+from modules.process.preprocess import urls_preprocess
 
 logger = logging.getLogger(log_root)
 fail_urls_logger = logging.getLogger(fail_urls_log_root)
@@ -33,9 +35,7 @@ def main(url: str):
     # 後處理
     data = PostProcessData.data_process(tmp_dir, user_parameters.comment_update, miss_program)
     process = PostProcess(data)
-    process.meta_clear()
-    process.move()
-    process.json_process()
+    process.in_async()
     return process, tmp
 
 
@@ -62,10 +62,7 @@ if __name__ == "__main__":
                 main_return = result.result()
                 if main_return is not None:
                     process, tmp = main_return
-                    process.jxl_conversion()
-                    tmp.cleanup()
-                    check_error = process.par2_verify()
-                    process.par2_create(check_error)
+                    process.not_in_async(tmp)
 
                 pbar.update(1)
 

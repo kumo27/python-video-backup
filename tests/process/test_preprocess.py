@@ -1,8 +1,8 @@
 import unittest
 
-import modules.process
 from modules.config import fail_urls_log_root, log_root
-from modules.process import urls_classification
+from modules.process.preprocess import __name__ as module_name
+from modules.process.preprocess import urls_classification
 
 
 class UrlsClassificationTest(unittest.TestCase):
@@ -142,7 +142,7 @@ class UrlsClassificationTest(unittest.TestCase):
         self.assertEqual(
             loggers.output,
             [
-                f"ERROR:{log_root}.{modules.process.__name__}:程式目前可能無法下載「 {test_input[0]} 」，請考慮將網址回報，非常抱歉",  # noqa: E501
+                f"ERROR:{log_root}.{module_name}:程式目前可能無法下載「 {test_input[0]} 」，請考慮將網址回報，非常抱歉",  # noqa: E501
                 f"ERROR:{fail_urls_log_root}:{test_input[0]}",
             ],
         )
