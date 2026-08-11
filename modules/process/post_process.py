@@ -21,15 +21,15 @@ class PostProcess:
     def _env_init(self):
         # 重命名
         for file_path in self.data.tmp_dir.iterdir():
-            if file_path.name[0] == ".":
+            if file_path.is_file() and file_path.name[0] == ".":
                 file_path.rename(file_path.with_name(file_path.name[1:]))
 
         self.data.finish_dir.mkdir(parents=True, exist_ok=True)
 
-    def meta_process_and_clean(self):
+    def meta_process_and_clean(self, tmp: Path):
         meta_clear(self.data)
         info_process(self.data)
-        comment_process(self.data)
+        comment_process(self.data, tmp)
         live_chat_process(self.data)
         move(self.data)
 

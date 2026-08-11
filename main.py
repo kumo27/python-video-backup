@@ -26,9 +26,9 @@ def dl_workflow(tmp_path: Path, url: str):
 
 
 def io_intensive_preprocess_workflow(tmp_path: Path):
-    data = PostProcessData.data_process(tmp_path, user_parameters.comment_update, miss_program)
+    data = PostProcessData.data_process(user_parameters.comment_update, miss_program, tmp_path)
     process = PostProcess(data)
-    process.meta_process_and_clean()
+    process.meta_process_and_clean(tmp_path)
 
     return process
 
@@ -37,6 +37,7 @@ def main_workflow(url: str):
     # 暫存區創建
     tmp = TemporaryDirectory(prefix="python_backup_")
     tmp_path = Path(tmp.name)
+    (tmp_path / ".meta_data").mkdir(exist_ok=True)
 
     dl_error = dl_workflow(tmp_path, url)
 

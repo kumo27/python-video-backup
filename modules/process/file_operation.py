@@ -6,7 +6,9 @@ def move(data: PostProcessData):
     for file_path in data.tmp_dir.iterdir():
         if file_path.suffix == ".mkv":
             file_path.move(data.finish_dir / "video.mkv")
-        elif file_path.suffix in (".srt", ".ass", ".vtt"):
+        elif file_path.suffix in (".srt", ".ass", ".vtt") or (
+            file_path.is_dir() and file_path.name == ".meta_data"
+        ):
             file_path.move_into(data.finish_dir)
 
 

@@ -8,8 +8,8 @@ from ..config import download_dir
 
 @dataclass(frozen=True, slots=True)
 class PostProcessData:
-    video_info: dict
     release_date: datetime
+    video_info: dict
     tmp_dir: Path
     finish_dir: Path
     comment_update: bool
@@ -18,9 +18,9 @@ class PostProcessData:
     @classmethod
     def data_process(
         cls,
-        tmp_dir: Path,
         comment_update: bool,
         miss_program: tuple[str, ...],
+        tmp_dir: Path,
         finish_dir: Path | None = None,
     ):
         # 取得影片資料
@@ -44,4 +44,4 @@ class PostProcessData:
                 / (f"{release_date:%Y%m%d}_{clean_title}_{video_info['id']}")
             )
 
-        return cls(video_info, release_date, tmp_dir, finish_dir, comment_update, miss_program)
+        return cls(release_date, video_info, tmp_dir, finish_dir, comment_update, miss_program)

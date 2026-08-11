@@ -103,6 +103,13 @@ class DL:
         Path(tmp_dir / "cover.jpg").write_bytes(requests.get(video_info["thumbnail"]).content)
         return False
 
+    def author_thumbnail(self, author: str, url: str, tmp_dir: Path):
+        web = requests.get(url)
+        Path(tmp_dir / ".meta_data" / f"{author}.{web.headers['Content-Type'][6:]}").write_bytes(
+            web.content
+        )
+        return web.headers["Content-Type"][6:]
+
     def _error_message(self, e: DownloadError):
         for error, msg in self.error_dict.items():
             if error in str(e):

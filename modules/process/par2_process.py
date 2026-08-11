@@ -36,7 +36,7 @@ def par2_create(data: PostProcessData, check_error: bool):
     # fmt: on
 
     # 遞歸檔案清單
-    par2_cmd += [f.name for f in data.finish_dir.iterdir()]
+    par2_cmd += [f.relative_to(data.finish_dir) for f in data.finish_dir.glob("**/*")]
 
     # 校驗檔創建與驗證
     logger.debug(par2_cmd)
