@@ -2,16 +2,35 @@ import json
 import logging
 import re
 from datetime import datetime
-from pathlib import Path
 from typing import Any
 
-from ..downloader import DL
+import aiofiles
+
 from .data_process import PostProcessData
 
 logger = logging.getLogger(__name__)
 
 
-def comment_process(data: PostProcessData, tmp: Path):
+def comment_author_thumbnail(data: PostProcessData) -> dict[str, str]:
+    author_thumbnail_dict: dict[str, str] = {}
+
+    for comments in data.video_info["comments"]:
+        author_thumbnail_match = re.search(
+            r"https://yt3.ggpht.com/[^=]+", comments["author_thumbnail"]
+        )
+
+        if author_thumbnail_match is None:
+            logger.warning(
+                f"留言者:{comments['author']}，頭貼無法下載，請考慮回報(取得url:{comments['author_thumbnail']})"
+            )
+            continue
+
+        author_thumbnail_dict[comments["author"]] = author_thumbnail_match.group()
+
+    return author_thumbnail_dict
+
+
+async def comment_process(data: PostProcessData, name_suffix_dict: dict[str, str]) -> None:
     """留言處理"""
 
     logger.debug("進入留言處理函式")
@@ -28,12 +47,8 @@ def comment_process(data: PostProcessData, tmp: Path):
             "author": comments["author"],
             "text": comments["text"],
             "time": datetime.fromtimestamp(comments["timestamp"]),
-            "author_thumbnail": re.search(
-                r"https://yt3.ggpht.com/[^=]+", comments["author_thumbnail"]
-            ).group(),
         }
 
-    dl = DL({})
     # 資料處理
     for key, comments_data in data_dict.items():
         # 深度尋找
@@ -42,26 +57,24 @@ def comment_process(data: PostProcessData, tmp: Path):
         while (depth_key := parent_dict[depth_key]) != "root":
             depth += 1
 
-        suffix = dl.author_thumbnail(
-            comments_data["author"], comments_data["author_thumbnail"], tmp
-        )
         # 輸出格式化
         text: str = comments_data["text"]
         text = text.replace("\r", "")
         text = text.replace("\n", f"<br>\n{' ' * depth * 2}  > ")
         output_list.append(
-            f'{" " * depth * 2}- <img src=".meta_data/{comments_data["author"]}.{suffix}" width="40" height="40">{comments_data["author"]}_{comments_data["time"]:%Y/%m/%d}\n'
+            f'{" " * depth * 2}- <img src=".meta_data/{comments_data["author"]}.{name_suffix_dict[comments_data["author"]]}" width="40" height="40">'  # noqa: E501
+            f"{comments_data['author']}_{comments_data['time']:%Y/%m/%d}\n"
             f"{' ' * depth * 2}  > {text}\n"
         )
 
     # 檔案寫入
-    with open(
+    async with aiofiles.open(
         (data.finish_dir / f"comment_{datetime.now():%Y%m%d%H%M}.md"), mode="w", encoding="utf-8"
     ) as f:
-        f.write("".join(output_list))
+        await f.write("".join(output_list))
 
 
-def info_process(data: PostProcessData):
+async def info_process(data: PostProcessData) -> None:
     """影片資訊處理"""
 
     logger.debug("進入info處理函式")
@@ -85,26 +98,28 @@ def info_process(data: PostProcessData):
     )
 
     # 影片資訊寫入
-    with open((data.finish_dir / "info.txt"), "w", encoding="utf-8") as f:
-        f.write(output_info)
+    async with aiofiles.open((data.finish_dir / "info.txt"), "w", encoding="utf-8") as f:
+        await f.write(output_info)
 
 
-def live_chat_process(data: PostProcessData):
+async def live_chat_process(data: PostProcessData) -> None:
     """聊天室處理"""
 
     logger.debug("進入聊天室處理函式")
 
     # 如果沒有就跳出
-    if not Path(data.tmp_dir / "live_chat.json").exists():
+    if not await (data.tmp_dir / "live_chat.json").exists():
         return
 
     # 變數定義
     output_live_chat: dict = {}  # 聊天室內文
 
     # 聊天室json處理與寫入
-    with open(data.tmp_dir / "live_chat.json", encoding="utf-8") as f:
-        output_live_chat = {
-            f"第{i + 1}條訊息": json.loads(live_chat) for i, live_chat in enumerate(f)
-        }
-    with open((data.finish_dir / "live_chat.json"), "w", encoding="utf-8") as f:
-        json.dump(output_live_chat, f, indent=4, ensure_ascii=False)
+    async with aiofiles.open(data.tmp_dir / "live_chat.json", encoding="utf-8") as f:
+        i = 0
+        while line := await f.readline():
+            i += 1
+            output_live_chat[f"第{i}條訊息"] = json.loads(line)
+
+    async with aiofiles.open((data.finish_dir / "live_chat.json"), "w", encoding="utf-8") as f:
+        await f.write(json.dumps(output_live_chat, indent=4, ensure_ascii=False))

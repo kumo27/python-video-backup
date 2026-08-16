@@ -1,7 +1,7 @@
 from typing import Any
 
 from .config import urls_txt_path
-from .tool import answer_error
+from .utils import answer_error
 
 
 class Interactive:
@@ -11,12 +11,12 @@ class Interactive:
         self.urls: list[str] = []
         self.browser_tuple = ("不匯入", "chrome", "edge", "brave", "firefox")  # 瀏覽器選項
 
-    def main_ask(self):
+    def main_ask(self) -> None:
         self._browser_opt_ask()
         self._dl_opt_ask()
         self._urls_file_use_ask()
 
-    def _browser_opt_ask(self):
+    def _browser_opt_ask(self) -> None:
         # 生成詢問內容
         ask_str = "選擇是否從瀏覽器匯入cookie:\n"
         for i, browser in enumerate(self.browser_tuple):
@@ -39,7 +39,7 @@ class Interactive:
         else:
             print("無效輸入過多，使用預設設定")
 
-    def _dl_opt_ask(self):
+    def _dl_opt_ask(self) -> None:
         # 僅更新留言詢問
         for _ in range(5):
             answer = input("是否僅更新留言(y/n): ").strip().lower()
@@ -53,7 +53,7 @@ class Interactive:
         else:
             print("無效輸入過多，使用預設設定")
 
-    def _urls_file_use_ask(self):
+    def _urls_file_use_ask(self) -> None:
         # 判斷有沒有連結檔
         if urls_txt_path.is_file():
             for _ in range(5):

@@ -1,7 +1,7 @@
-import json
 from dataclasses import dataclass
 from datetime import datetime
-from pathlib import Path
+
+from aiopathlib import AsyncPath
 
 from ..config import download_dir
 
@@ -10,24 +10,21 @@ from ..config import download_dir
 class PostProcessData:
     release_date: datetime
     video_info: dict
-    tmp_dir: Path
-    finish_dir: Path
+    tmp_dir: AsyncPath
+    finish_dir: AsyncPath
     comment_update: bool
     miss_program: tuple[str, ...]
 
     @classmethod
     def data_process(
         cls,
+        video_info: dict,
         comment_update: bool,
         miss_program: tuple[str, ...],
-        tmp_dir: Path,
-        finish_dir: Path | None = None,
+        tmp_dir: AsyncPath,
+        finish_dir: AsyncPath | None = None,
     ):
-        # 取得影片資料
-        with open(tmp_dir / ".info.json", encoding="utf-8") as f:
-            video_info: dict = json.load(f)
-
-        # 影片發布日期
+        # 發布日期解析
         video_date: str = video_info.get("release_date") or video_info.get("upload_date")  # pyright: ignore[reportAssignmentType]
         release_date: datetime = datetime.strptime(video_date, "%Y%m%d")
 
@@ -39,7 +36,7 @@ class PostProcessData:
 
             # 合成完成資料夾
             finish_dir = (
-                download_dir
+                AsyncPath(download_dir)
                 / clean_channel
                 / (f"{release_date:%Y%m%d}_{clean_title}_{video_info['id']}")
             )

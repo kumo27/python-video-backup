@@ -20,7 +20,7 @@ def urls_preprocess(urls: list[str], dl: DL) -> tuple[str, ...]:
     return tuple(dict.fromkeys(video_urls))
 
 
-def urls_classification(urls: list[str]):
+def urls_classification(urls: list[str]) -> tuple[list[str], list[str]]:
     """url分類"""
     # 變數定義
     playlist_urls: list[str] = []  # 播放清單
@@ -68,7 +68,7 @@ def urls_classification(urls: list[str]):
     return playlist_urls, video_urls
 
 
-def get_playlist_video_urls(playlist_urls: list[str], dl: DL):
+def get_playlist_video_urls(playlist_urls: list[str], dl: DL) -> list[str]:
     """獲取播放清單內的影片連結"""
     # 變數定義
     finish_urls: list[str] = []  # 回傳連結

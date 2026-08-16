@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import subprocess
 
@@ -7,7 +8,7 @@ from .data_process import PostProcessData
 logger = logging.getLogger(__name__)
 
 
-def par2_create(data: PostProcessData, check_error: bool):
+async def par2_create(data: PostProcessData, check_error: bool) -> None:
     """par2檔案處理模塊"""
 
     # 如果缺少par2直接跳出
@@ -29,10 +30,10 @@ def par2_create(data: PostProcessData, check_error: bool):
     # par2參數設定
     # fmt: off
     par2_cmd = [
-            "par2", "c",
-            "-r30", "-b10000", "-n1",
-            "check.par2",
-        ]
+        "par2", "c",
+        "-r30", "-b10000", "-n1",
+        "check.par2",
+    ]
     # fmt: on
 
     # 遞歸檔案清單
@@ -41,16 +42,20 @@ def par2_create(data: PostProcessData, check_error: bool):
     # 校驗檔創建與驗證
     logger.debug(par2_cmd)
     subprocess.run(par2_cmd, capture_output=True, cwd=data.finish_dir)
-    par2_verify = subprocess.run(
-        ("par2", "v", "check.par2"), capture_output=True, text=True, cwd=data.finish_dir
+    par2_verify_process = await asyncio.create_subprocess_exec(
+        *("par2", "v", "check.par2"),
+        cwd=data.finish_dir,
+        stdout=asyncio.subprocess.DEVNULL,
+        stderr=asyncio.subprocess.DEVNULL,
     )
-    if par2_verify.returncode != 0:
+
+    if await par2_verify_process.wait() != 0:
         for f in data.finish_dir.glob("*.par2"):
             f.unlink()
         logger.error(f"影片：{data.video_info['title']}，par2檔案未能成功創建，請嘗試手動創建")
 
 
-def par2_verify(data: PostProcessData) -> bool:
+async def par2_verify(data: PostProcessData) -> bool:
     """檔案更新前驗證與修復"""
 
     # 如果不更新留言或缺少par2直接跳出
@@ -59,35 +64,46 @@ def par2_verify(data: PostProcessData) -> bool:
 
     logger.debug("進入par校驗函式")
 
-    par2_verify = subprocess.run(
-        ("par2", "v", "check.par2"), capture_output=True, text=True, cwd=data.finish_dir
+    par2_verify_process = await asyncio.create_subprocess_exec(
+        *("par2", "v", "check.par2"),
+        cwd=data.finish_dir,
+        stdout=asyncio.subprocess.DEVNULL,
+        stderr=asyncio.subprocess.PIPE,
     )
-    match par2_verify.returncode:
+
+    _stdout, stderr = await par2_verify_process.communicate()
+
+    match await par2_verify_process.wait():
         # 清理檔案並繼續
         case 0:
             file_operation.old_comment_clear(data)
             return False
+
         # 嘗試修復並繼續
         case 1:
-            par2_repair = subprocess.run(
-                ("par2", "r", "check.par2"),
-                capture_output=True,
-                text=True,
+            par2_repair_process = await asyncio.create_subprocess_exec(
+                *("par2", "r", "check.par2"),
                 cwd=data.finish_dir,
+                stdout=asyncio.subprocess.DEVNULL,
+                stderr=asyncio.subprocess.DEVNULL,
             )
-            if par2_repair.returncode != 0:
+
+            if await par2_repair_process.wait() != 0:
                 logger.error(f"影片：{data.video_info['title']}，自動修復失敗，請嘗試重新下載")
                 return True
             for f in data.finish_dir.glob("*.1"):
                 f.unlink()
             file_operation.old_comment_clear(data)
+
             return False
+
         # 無法修復，跳過
         case 2:
             logger.error(f"影片：{data.video_info['title']}，檔案嚴重損毀，請嘗試重新下載")
             return True
+
         # 未知狀況
         case _:
             logger.error(f"於影片：{data.video_info['title']}，發現未測試出的錯誤")
-            logger.error(par2_verify.stderr.strip())
+            logger.error(stderr.decode().strip())
             return True

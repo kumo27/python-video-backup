@@ -1,12 +1,12 @@
+import asyncio
 import logging
-import subprocess
 
 from .data_process import PostProcessData
 
 logger = logging.getLogger(__name__)
 
 
-def meta_clear(data: PostProcessData):
+async def meta_clear(data: PostProcessData) -> None:
     """影片封裝內詮釋資料清理"""
 
     # 如果僅更新留言就跳出
@@ -29,4 +29,8 @@ def meta_clear(data: PostProcessData):
     )
     # fmt: on
 
-    subprocess.run(meta_clear_cmd, capture_output=True)
+    await asyncio.create_subprocess_exec(
+        *meta_clear_cmd,
+        stdout=asyncio.subprocess.DEVNULL,
+        stderr=asyncio.subprocess.DEVNULL,
+    )

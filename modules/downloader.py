@@ -1,10 +1,10 @@
-import json
 import logging
 import time
-from pathlib import Path
 from typing import Any
 
-import requests
+import aiofiles
+from aiohttp import ClientSession
+from aiopathlib import AsyncPath
 from yt_dlp import YoutubeDL
 from yt_dlp.utils import DownloadError
 
@@ -72,10 +72,9 @@ class DL:
         logger.debug("返回影片列表")
         return tuple(new_url)
 
-    def download(self, url: str, tmp_dir: Path) -> bool:
+    def download(self, url: str, tmp_dir: AsyncPath) -> bool:
         """影片下載與影片資料讀取"""
         # 變數定義
-        video_info: dict = {}  # 影片資訊
         video_dl_opts = {
             **self.ydl_opts,
             "outtmpl": {
@@ -94,23 +93,40 @@ class DL:
                 self._error_message(e)
                 return True
 
-        # 獲取info資料
-        with open(tmp_dir / ".info.json", encoding="utf-8") as f:
-            video_info = json.load(f)
-
-        # 下載縮圖
-        logger.debug("下載縮圖")
-        Path(tmp_dir / "cover.jpg").write_bytes(requests.get(video_info["thumbnail"]).content)
+        logger.debug("下載完成")
         return False
 
-    def author_thumbnail(self, author: str, url: str, tmp_dir: Path):
-        web = requests.get(url)
-        Path(tmp_dir / ".meta_data" / f"{author}.{web.headers['Content-Type'][6:]}").write_bytes(
-            web.content
-        )
-        return web.headers["Content-Type"][6:]
+    async def cover_get(self, session: ClientSession, url: str, tmp_dir: AsyncPath) -> None:
+        async with session.get(url) as response:
+            if not response.ok:
+                # 還沒寫
+                pass
 
-    def _error_message(self, e: DownloadError):
+            data = await response.read()
+
+        async with aiofiles.open(tmp_dir / "cover.jpg", mode="wb") as f:
+            await f.write(data)
+
+    async def author_thumbnail_get(
+        self, session: ClientSession, name_and_url_tuple: tuple[str, str], tmp_dir: AsyncPath
+    ) -> dict[str, str]:
+        name_suffix_dict: dict[str, str] = {}
+
+        async with session.get(name_and_url_tuple[1]) as response:
+            if (suffix := response.headers["Content-Type"][6:]) == "jpeg":
+                suffix = "jpg"
+
+            data = await response.read()
+
+        name_suffix_dict[name_and_url_tuple[0]] = suffix
+        async with aiofiles.open(
+            tmp_dir / ".meta_data" / f"{name_and_url_tuple[0]}.{suffix}", mode="wb"
+        ) as f:
+            await f.write(data)
+
+        return name_suffix_dict
+
+    def _error_message(self, e: DownloadError) -> None:
         for error, msg in self.error_dict.items():
             if error in str(e):
                 logger.error(msg)

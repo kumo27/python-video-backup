@@ -4,12 +4,12 @@ import subprocess
 from sys import exit
 
 from .config import LOGGING_CONFIG, log_dir
-from .tool import answer_error, clear_terminal
+from .utils import answer_error, clear_terminal
 
 logger = logging.getLogger(__name__)
 
 
-def main_init():
+def main_init() -> tuple[str, ...]:
     """總初始化"""
     log_init()
     miss_program = init_check()
@@ -18,7 +18,7 @@ def main_init():
     return miss_program
 
 
-def log_init():
+def log_init() -> None:
     """log初始化"""
     log_dir.mkdir(exist_ok=True)
     logging.config.dictConfig(LOGGING_CONFIG)
