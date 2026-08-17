@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import subprocess
 
 from . import file_operation
 from .data_process import PostProcessData
@@ -39,16 +38,23 @@ async def par2_create(data: PostProcessData, check_error: bool) -> None:
     # 遞歸檔案清單
     par2_cmd += [f.relative_to(data.finish_dir) for f in data.finish_dir.glob("**/*")]
 
-    # 校驗檔創建與驗證
+    # 校驗檔創建
     logger.debug(par2_cmd)
-    subprocess.run(par2_cmd, capture_output=True, cwd=data.finish_dir)
+    par2_create_process = await asyncio.create_subprocess_exec(
+        *par2_cmd,
+        cwd=data.finish_dir,
+        stdout=asyncio.subprocess.DEVNULL,
+        stderr=asyncio.subprocess.DEVNULL,
+    )
+    await par2_create_process.wait()
+
+    # 校驗檔驗證
     par2_verify_process = await asyncio.create_subprocess_exec(
         *("par2", "v", "check.par2"),
         cwd=data.finish_dir,
         stdout=asyncio.subprocess.DEVNULL,
         stderr=asyncio.subprocess.DEVNULL,
     )
-
     if await par2_verify_process.wait() != 0:
         for f in data.finish_dir.glob("*.par2"):
             f.unlink()

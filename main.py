@@ -22,7 +22,7 @@ fail_urls_logger = logging.getLogger(fail_urls_log_root)
 
 async def post_process_workflow(data: PostProcessData, session: ClientSession) -> None:
     # 隱藏文件重命名、完成資料夾創建
-    await asyncio.create_task(data.finish_dir.mkdir(exist_ok=True))
+    await data.finish_dir.mkdir(parents=True, exist_ok=True)
     tmp_file_rename = asyncio.create_task(file_operation.rename(data.tmp_dir))
 
     # 影片封裝內，詮釋資料清理
@@ -107,10 +107,10 @@ async def start_workflow(urls: tuple[str, ...]) -> None:
     """啟動下載工作流"""
     async with ClientSession() as session:
         with ThreadPoolExecutor(max_workers) as executor:
-            task = [asyncio.create_task(main_workflow(url, executor, session)) for url in urls]
+            tasks = [asyncio.create_task(main_workflow(url, executor, session)) for url in urls]
 
             await tqdm_asyncio.gather(
-                *task,
+                *tasks,
                 desc="所有影片下載中",
                 bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt}",
             )

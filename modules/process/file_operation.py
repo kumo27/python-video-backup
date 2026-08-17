@@ -1,25 +1,42 @@
-from pathlib import Path
+import asyncio
+from collections.abc import Coroutine
 
+import aioshutil
 from aiopathlib import AsyncPath
 
 from .data_process import PostProcessData
 
 
 async def rename(tmp_dir: AsyncPath) -> None:
-    for path in tmp_dir.iterdir():
-        if await path.is_file() and path.name[0] == ".":
-            await path.rename(path.with_name(path.name[1:]))
+    task_list: list[Coroutine] = [
+        path.rename(path.with_name(path.name[1:]))
+        for path in tmp_dir.iterdir()
+        if await path.is_file() and path.name[0] == "."
+    ]
+
+    await asyncio.gather(*task_list)
 
 
 async def move(data: PostProcessData) -> None:
     """完成檔案移動"""
+    unlink_task_list: list[Coroutine] = []
+    move_task_list: list[Coroutine] = []
+
     for file_path in data.tmp_dir.iterdir():
         if file_path.suffix == ".mkv":
-            Path(file_path).move(data.finish_dir / "video.mkv")
-        elif file_path.suffix in (".srt", ".ass", ".vtt") or (
-            await file_path.is_dir() and file_path.name == ".meta_data"
-        ):
-            Path(file_path).move_into(data.finish_dir)
+            unlink_task_list.append((data.finish_dir / "video.mkv").unlink(missing_ok=True))
+            move_task_list.append(aioshutil.move(file_path, data.finish_dir / "video.mkv"))
+        elif file_path.suffix in (".srt", ".ass", ".vtt"):
+            unlink_task_list.append((data.finish_dir / file_path.name).unlink(missing_ok=True))
+            move_task_list.append(aioshutil.move(file_path, data.finish_dir))
+        elif await file_path.is_dir() and file_path.name == ".meta_data":
+            if await (data.finish_dir / ".meta_data").is_dir():
+                unlink_task_list.append(aioshutil.rmtree(data.finish_dir / ".meta_data"))
+
+            move_task_list.append(aioshutil.move(file_path, data.finish_dir))
+
+    await asyncio.gather(*unlink_task_list)
+    await asyncio.gather(*move_task_list)
 
 
 def old_comment_clear(data: PostProcessData) -> None:
