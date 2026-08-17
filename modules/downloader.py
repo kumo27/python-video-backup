@@ -96,16 +96,17 @@ class DL:
         logger.debug("下載完成")
         return False
 
-    async def cover_get(self, session: ClientSession, url: str, tmp_dir: AsyncPath) -> None:
+    async def cover_get(self, session: ClientSession, url: str, tmp_dir: AsyncPath) -> bool:
         async with session.get(url) as response:
             if not response.ok:
-                # 還沒寫
-                pass
+                return True
 
             data = await response.read()
 
         async with aiofiles.open(tmp_dir / "cover.jpg", mode="wb") as f:
             await f.write(data)
+
+        return False
 
     async def author_thumbnail_get(
         self, session: ClientSession, name_and_url_tuple: tuple[str, str], tmp_dir: AsyncPath

@@ -5,6 +5,8 @@ from .utils import answer_error
 
 
 class Interactive:
+    """涉及使用者互動的類"""
+
     def __init__(self) -> None:
         self.ydl_update_opts: dict[str, Any] = {}  # 參數更新用字典
         self.comment_update: bool = False

@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+from collections.abc import Coroutine
 from concurrent.futures import ThreadPoolExecutor
 
 import aiofiles
@@ -22,8 +23,11 @@ fail_urls_logger = logging.getLogger(fail_urls_log_root)
 
 async def post_process_workflow(data: PostProcessData, session: ClientSession) -> None:
     # 隱藏文件重命名、完成資料夾創建
-    await data.finish_dir.mkdir(parents=True, exist_ok=True)
-    tmp_file_rename = asyncio.create_task(file_operation.rename(data.tmp_dir))
+    post_env_init: tuple[Coroutine, ...] = (
+        data.finish_dir.mkdir(parents=True, exist_ok=True),
+        file_operation.rename(data.tmp_dir),
+    )
+    await asyncio.gather(*post_env_init)
 
     # 影片封裝內，詮釋資料清理
     video_meta_clear = asyncio.create_task(video_process.meta_clear(data))
@@ -52,7 +56,6 @@ async def post_process_workflow(data: PostProcessData, session: ClientSession) -
 
     # 搬移處理完成的資料
     await asyncio.gather(
-        tmp_file_rename,
         video_meta_clear,
         info_process,
         live_chat_process,
@@ -80,17 +83,16 @@ async def main_workflow(url: str, executor: ThreadPoolExecutor, session: ClientS
             info_str = await f.read()
         video_info: dict = json.loads(info_str)
 
+        # 縮圖下載
+        dl_error = await dl.cover_get(session, video_info["thumbnail"], tmp_path)
+        if dl_error:
+            fail_urls_logger.error(url.strip())
+            return
+
         # 後處理資料創建
         data = PostProcessData.data_process(
             video_info, user_parameters.comment_update, miss_program, tmp_path
         )
-
-        # 縮圖下載
-        dl_cover = asyncio.create_task(dl.cover_get(session, video_info["thumbnail"], tmp_path))
-        dl_error = await dl_cover
-        if dl_error:
-            fail_urls_logger.error(url.strip())
-            return
 
         # 後處理
         await post_process_workflow(data, session)
@@ -98,6 +100,7 @@ async def main_workflow(url: str, executor: ThreadPoolExecutor, session: ClientS
         # 封面圖壓縮
         await post_process.cover_jxl_conversion(data)
 
+    # par2創建
     async with par2_semaphore:
         check_error = await par2_process.par2_verify(data)
         await par2_process.par2_create(data, check_error)
