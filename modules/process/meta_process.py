@@ -123,8 +123,3 @@ async def live_chat_process(data: PostProcessData) -> None:
 
     async with aiofiles.open((data.finish_dir / "live_chat.json"), "w", encoding="utf-8") as f:
         await f.write(json.dumps(output_live_chat, indent=4, ensure_ascii=False))
-
-
-async def live_chat_markdown_process(data: PostProcessData):
-    """之後替換json輸出的聊天室"""
-    pass

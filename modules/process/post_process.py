@@ -1,5 +1,4 @@
 import asyncio
-from pathlib import Path
 
 from modules.process.data_process import PostProcessData
 
@@ -7,15 +6,15 @@ from modules.process.data_process import PostProcessData
 async def cover_jxl_conversion(data: PostProcessData) -> None:
     """將封面壓縮成jxl"""
 
-    if "cjxl" in data.miss_program:
-        Path(data.tmp_dir / "cover.jpg").move_into(data.finish_dir)
+    # 如果缺失程式或無法壓縮提早退出
+    if "cjxl" in data.miss_program or not await (data.tmp_dir / "cover.jpg").is_file():
         return
 
     # fmt: off
     jxl_cmd = (
         "cjxl",
-        (data.tmp_dir / "cover.jpg"),
-        (data.finish_dir / "cover.jxl"),
+        "cover.jpg",
+        "cover.jxl",
         "-e", "9",
         "--brotli_effort", "11",
     )
@@ -23,7 +22,11 @@ async def cover_jxl_conversion(data: PostProcessData) -> None:
 
     jxl_conversion_process = await asyncio.create_subprocess_exec(
         *jxl_cmd,
+        cwd=data.tmp_dir,
         stdout=asyncio.subprocess.DEVNULL,
         stderr=asyncio.subprocess.DEVNULL,
     )
-    await jxl_conversion_process.wait()
+
+    # 檢查結束碼
+    if await jxl_conversion_process.wait() == 0:
+        await (data.tmp_dir / "cover.jpg").unlink()

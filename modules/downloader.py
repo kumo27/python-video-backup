@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import time
 from typing import Any
@@ -103,7 +104,9 @@ class DL:
 
             data = await response.read()
 
-        async with aiofiles.open(tmp_dir / "cover.jpg", mode="wb") as f:
+        suffix = "webp" if url[-5:] == ".webp" else "jpg"
+
+        async with aiofiles.open(tmp_dir / f"cover.{suffix}", mode="wb") as f:
             await f.write(data)
 
         return False
@@ -113,11 +116,21 @@ class DL:
     ) -> dict[str, str]:
         name_suffix_dict: dict[str, str] = {}
 
-        async with session.get(name_and_url_tuple[1]) as response:
-            if (suffix := response.headers["Content-Type"][6:]) == "jpeg":
-                suffix = "jpg"
+        # 暫時先用死迴圈
+        while True:
+            async with session.get(name_and_url_tuple[1]) as response:
+                # 正常
+                if response.ok:
+                    break
+                # 請求過多
+                elif response.status == 429:
+                    await asyncio.sleep(5)
+                    continue
 
-            data = await response.read()
+        if (suffix := response.headers["Content-Type"][6:]) == "jpeg":
+            suffix = "jpg"
+
+        data = await response.read()
 
         name_suffix_dict[name_and_url_tuple[0]] = suffix
         async with aiofiles.open(
