@@ -33,8 +33,11 @@ async def move(data: PostProcessData) -> None:
             move_task_list.append(aioshutil.move(file_path, data.finish_dir))
         # 詮釋資料移動
         elif await file_path.is_dir() and file_path.name == ".meta_data":
-            if await (data.finish_dir / ".meta_data").is_dir():
-                unlink_task_list.append(aioshutil.rmtree(data.finish_dir / ".meta_data"))
+            if await (data.finish_dir / ".meta_data").exists():
+                unlink_task_list.append((data.finish_dir / ".meta_data").unlink(missing_ok=True))
+                unlink_task_list.append(
+                    aioshutil.rmtree(data.finish_dir / ".meta_data", ignore_errors=True)
+                )
 
             move_task_list.append(aioshutil.move(file_path, data.finish_dir))
 

@@ -6,8 +6,12 @@ from modules.process.data_process import PostProcessData
 async def cover_jxl_conversion(data: PostProcessData) -> None:
     """將封面壓縮成jxl"""
 
-    # 如果缺失程式或無法壓縮提早退出
-    if "cjxl" in data.miss_program or not await (data.tmp_dir / "cover.jpg").is_file():
+    # 提早退出
+    if (
+        "cjxl" in data.miss_program  # 缺少程式
+        or not await (data.tmp_dir / "cover.jpg").is_file()  # 檔案不存在，或非jpg
+        or data.comment_update  # 僅更新留言
+    ):
         return
 
     # fmt: off

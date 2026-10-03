@@ -119,18 +119,16 @@ class DL:
         # 暫時先用死迴圈
         while True:
             async with session.get(name_and_url_tuple[1]) as response:
-                # 正常
-                if response.ok:
-                    break
-                # 請求過多
-                elif response.status == 429:
+                # 如果不正常
+                if not response.ok:
                     await asyncio.sleep(5)
                     continue
 
-        if (suffix := response.headers["Content-Type"][6:]) == "jpeg":
-            suffix = "jpg"
+                if (suffix := response.headers["Content-Type"][6:]) == "jpeg":
+                    suffix = "jpg"
 
-        data = await response.read()
+                data = await response.read()
+                break
 
         name_suffix_dict[name_and_url_tuple[0]] = suffix
         async with aiofiles.open(

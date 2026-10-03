@@ -61,7 +61,6 @@ async def post_process_workflow(data: PostProcessData, session: ClientSession) -
         live_chat_process,
         make_markdown,
     )
-    await file_operation.move(data)
 
 
 async def main_workflow(url: str, executor: ThreadPoolExecutor, session: ClientSession) -> None:
@@ -99,6 +98,9 @@ async def main_workflow(url: str, executor: ThreadPoolExecutor, session: ClientS
 
         # 封面圖壓縮
         await post_process.cover_jxl_conversion(data)
+
+        # 完成檔案移動
+        await file_operation.move(data)
 
     # par2創建
     async with par2_semaphore:
