@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 def main_init() -> tuple[str, ...]:
     """總初始化"""
     log_init()
-    miss_program = init_check()
+    miss_program: tuple[str, ...] = init_check()
     clear_terminal()
 
     return miss_program
@@ -26,7 +26,7 @@ def log_init() -> None:
 
 def init_check() -> tuple[str, ...]:
     """運行環境檢查"""
-    check_list = {
+    check_list: dict[str, tuple[str, str]] = {
         "ffmpeg": ("ffmpeg", "-h"),
         "par2": ("par2", "-h"),
         "mkvpropedit": ("mkvpropedit", "-h"),
@@ -47,7 +47,7 @@ def init_check() -> tuple[str, ...]:
             # 紀錄錯誤並決定是否忽略錯誤
             logger.error(f"依賴項{program} 未找到，部份程式無法執行")
             while True:
-                answer = input("忽略錯誤繼續？(y/n): ").strip().lower()
+                answer: str = input("忽略錯誤繼續？(y/n): ").strip().lower()
                 if answer == "y":
                     miss_program.append(program)
                     break

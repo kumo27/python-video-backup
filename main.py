@@ -122,13 +122,15 @@ async def start_workflow(urls: tuple[str, ...]) -> None:
 
 
 if __name__ == "__main__":
-    # 預處理
+    # 初始化
     miss_program = main_init()
     user_parameters = Interactive()
     user_parameters.main_ask()
+    # 連結預處理
     dl = DL(user_parameters.ydl_update_opts)
     urls = urls_preprocess(user_parameters.urls, dl)
 
+    # 限制任務數
     par2_semaphore = asyncio.Semaphore(1)
     tmp_semaphore = asyncio.Semaphore(10)
     asyncio.run(start_workflow(urls))
