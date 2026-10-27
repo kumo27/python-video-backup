@@ -2,17 +2,18 @@ import logging
 import logging.config
 import subprocess
 from sys import exit
+from time import sleep
 
-from .config import LOGGING_CONFIG, log_dir
+from .config import LOG_DIR, LOGGING_CONFIG
 from .utils import answer_error, clear_terminal
 
 logger = logging.getLogger(__name__)
 
 
-def main_init() -> tuple[str, ...]:
+def main_init() -> frozenset[str]:
     """總初始化"""
     log_init()
-    miss_program: tuple[str, ...] = init_check()
+    miss_program: frozenset[str] = init_check()
     clear_terminal()
 
     return miss_program
@@ -20,11 +21,11 @@ def main_init() -> tuple[str, ...]:
 
 def log_init() -> None:
     """log初始化"""
-    log_dir.mkdir(exist_ok=True)
+    LOG_DIR.mkdir(exist_ok=True)
     logging.config.dictConfig(LOGGING_CONFIG)
 
 
-def init_check() -> tuple[str, ...]:
+def init_check() -> frozenset[str]:
     """運行環境檢查"""
     check_list: dict[str, tuple[str, str]] = {
         "ffmpeg": ("ffmpeg", "-h"),
@@ -33,7 +34,7 @@ def init_check() -> tuple[str, ...]:
         "cjxl": ("cjxl", "-h"),
     }
 
-    miss_program: list[str] = []
+    miss_program: set[str] = set()
     for program, cmd in check_list.items():
         try:
             subprocess.run(cmd, capture_output=True)
@@ -46,14 +47,19 @@ def init_check() -> tuple[str, ...]:
 
             # 紀錄錯誤並決定是否忽略錯誤
             logger.error(f"依賴項{program} 未找到，部份程式無法執行")
-            while True:
+            for _ in range(3):
                 answer: str = input("忽略錯誤繼續？(y/n): ").strip().lower()
+
                 if answer == "y":
-                    miss_program.append(program)
                     break
                 elif answer == "n":
                     exit()
 
                 answer_error()
+            else:
+                print("無效輸入過多，使用預設設定(忽略錯誤)")
+                sleep(2)
 
-    return tuple(miss_program)
+            miss_program.add(program)
+
+    return frozenset(miss_program)

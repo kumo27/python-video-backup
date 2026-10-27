@@ -28,7 +28,7 @@ async def move(data: PostProcessData) -> None:
             unlink_task_list.append((data.finish_dir / "video.mkv").unlink(missing_ok=True))
             move_task_list.append(aioshutil.move(file_path, data.finish_dir / "video.mkv"))
         # 字幕移動與封面移動
-        elif file_path.suffix in (".srt", ".ass", ".vtt") or file_path.stem == "cover":
+        elif file_path.suffix in {".srt", ".ass", ".vtt"} or file_path.stem == "cover":
             unlink_task_list.append((data.finish_dir / file_path.name).unlink(missing_ok=True))
             move_task_list.append(aioshutil.move(file_path, data.finish_dir))
         # 詮釋資料移動

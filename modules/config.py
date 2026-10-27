@@ -1,23 +1,24 @@
 from pathlib import Path
+from typing import Any
 
 import urllib3.util.connection as urllib3_cn
 
 # 全域變數
 
 # log類
-log_dir: Path = Path.cwd() / "log"  # log路徑
-fail_urls_log_root: str = "fail_urls"  # 失敗連結log根名
+LOG_DIR: Path = Path.cwd() / "log"  # log路徑
+FAIL_URLS_LOG_ROOT: str = "fail_urls"  # 失敗連結log根名
 
 # 檔案類
-download_dir: Path = Path.cwd() / "download"  # 下載路徑
-urls_txt_path: Path = Path.cwd() / "urls.txt"  # urls檔案路徑
+DOWNLOAD_DIR: Path = Path.cwd() / "download"  # 下載路徑
+URLS_TXT_PATH: Path = Path.cwd() / "urls.txt"  # urls檔案路徑
 
 # 其他
-max_workers: int = 3  # 多執行緒數目
+MAX_WORKERS: int = 3  # 多執行緒數目
 urllib3_cn.HAS_IPV6 = False  # 禁止ipv6
 
 # log設定
-LOGGING_CONFIG = {
+LOGGING_CONFIG: dict[str, Any] = {
     "version": 1,
     "disable_existing_loggers": False,
     "formatters": {
@@ -39,7 +40,7 @@ LOGGING_CONFIG = {
         },
         "full_log_file": {
             "class": "logging.FileHandler",
-            "filename": log_dir / "full_log.log",
+            "filename": LOG_DIR / "full_log.log",
             "mode": "w",
             "encoding": "utf-8",
             "level": "DEBUG",
@@ -47,7 +48,7 @@ LOGGING_CONFIG = {
         },
         "fail_urls_file": {
             "class": "logging.FileHandler",
-            "filename": log_dir / "fail_urls.txt",
+            "filename": LOG_DIR / "fail_urls.txt",
             "mode": "w",
             "encoding": "utf-8",
             "level": "DEBUG",
@@ -59,7 +60,7 @@ LOGGING_CONFIG = {
             "level": "DEBUG",
             "handlers": ["terminal", "full_log_file"],
         },
-        fail_urls_log_root: {
+        FAIL_URLS_LOG_ROOT: {
             "level": "DEBUG",
             "handlers": ["fail_urls_file"],
             "propagate": False,

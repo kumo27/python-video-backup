@@ -1,6 +1,6 @@
 from typing import Any
 
-from .config import urls_txt_path
+from .config import URLS_TXT_PATH
 from .utils import answer_error
 
 
@@ -11,7 +11,13 @@ class Interactive:
         self.ydl_update_opts: dict[str, Any] = {}  # 參數更新用字典
         self.comment_update: bool = False
         self.urls: list[str] = []
-        self.browser_tuple = ("不匯入", "chrome", "edge", "brave", "firefox")  # 瀏覽器選項
+        self.browser_tuple: tuple[str, ...] = (
+            "不匯入",
+            "chrome",
+            "edge",
+            "brave",
+            "firefox",
+        )  # 瀏覽器選項
 
     def main_ask(self) -> None:
         self._browser_opt_ask()
@@ -62,12 +68,12 @@ class Interactive:
 
     def _urls_file_use_ask(self) -> None:
         # 判斷有沒有連結檔
-        if urls_txt_path.is_file():
+        if URLS_TXT_PATH.is_file():
             for _ in range(5):
                 answer: str = input("是否使用urls.txt(y/n): ").strip().lower()
 
                 if answer == "y":
-                    with urls_txt_path.open(encoding="utf-8") as f:
+                    with URLS_TXT_PATH.open(encoding="utf-8") as f:
                         self.urls = f.readlines()
                     break
                 elif answer == "n":

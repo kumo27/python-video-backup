@@ -4,11 +4,11 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from tqdm import tqdm
 
-from ..config import fail_urls_log_root, max_workers
+from ..config import FAIL_URLS_LOG_ROOT, MAX_WORKERS
 from ..downloader import DL
 
 logger = logging.getLogger(__name__)
-fail_urls_logger = logging.getLogger(fail_urls_log_root)
+fail_urls_logger = logging.getLogger(FAIL_URLS_LOG_ROOT)
 
 
 def urls_preprocess(urls: list[str], dl: DL) -> tuple[str, ...]:
@@ -79,7 +79,7 @@ def get_playlist_video_urls(playlist_urls: list[str], dl: DL) -> list[str]:
     new_urls: dict[str, tuple[str, ...] | None] = {}
     with (
         tqdm(total=len(playlist_urls), leave=False, desc="播放清單轉換中") as pbar,
-        ThreadPoolExecutor(max_workers) as executor,
+        ThreadPoolExecutor(MAX_WORKERS) as executor,
     ):
         work = {executor.submit(dl.get_playlist_url, url): url for url in playlist_urls}
         for result in as_completed(work):

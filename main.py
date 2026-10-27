@@ -1,6 +1,8 @@
 import asyncio
 import json
 import logging
+from asyncio.locks import Semaphore
+from asyncio.tasks import Task
 from collections.abc import Coroutine
 from concurrent.futures import ThreadPoolExecutor
 
@@ -9,7 +11,7 @@ from aiohttp import ClientSession
 from aiopathlib import AsyncPath
 from tqdm.asyncio import tqdm_asyncio
 
-from modules.config import fail_urls_log_root, max_workers
+from modules.config import FAIL_URLS_LOG_ROOT, MAX_WORKERS
 from modules.downloader import DL
 from modules.env_init import main_init
 from modules.interactive import Interactive
@@ -18,7 +20,7 @@ from modules.process.data_process import PostProcessData
 from modules.process.preprocess import urls_preprocess
 
 logger = logging.getLogger("modules")
-fail_urls_logger = logging.getLogger(fail_urls_log_root)
+fail_urls_logger = logging.getLogger(FAIL_URLS_LOG_ROOT)
 
 
 async def post_process_workflow(data: PostProcessData, session: ClientSession) -> None:
@@ -29,12 +31,15 @@ async def post_process_workflow(data: PostProcessData, session: ClientSession) -
     )
     await asyncio.gather(*post_env_init)
 
-    # 影片封裝內，詮釋資料清理
-    video_meta_clear = asyncio.create_task(video_process.meta_clear(data))
+    post_task: list[Task] = []
+
+    if not (user_parameters.comment_update or "mkvpropedit" in MISS_PROGRAM):
+        # 影片封裝內，詮釋資料清理
+        post_task.append(asyncio.create_task(video_process.meta_clear(data)))
 
     # 詮釋資料處理(除留言)
-    info_process = asyncio.create_task(meta_process.info_process(data))
-    live_chat_process = asyncio.create_task(meta_process.live_chat_process(data))
+    post_task.append(asyncio.create_task(meta_process.info_process(data)))
+    post_task.append(asyncio.create_task(meta_process.live_chat_process(data)))
 
     # 留言頭貼下載
     make_meta_tmp_dir = asyncio.create_task(
@@ -52,15 +57,10 @@ async def post_process_workflow(data: PostProcessData, session: ClientSession) -
         name_suffix_dict.update(update_dict)
 
     # 留言markdown創建
-    make_markdown = asyncio.create_task(meta_process.comment_process(data, name_suffix_dict))
+    post_task.append(asyncio.create_task(meta_process.comment_process(data, name_suffix_dict)))
 
     # 搬移處理完成的資料
-    await asyncio.gather(
-        video_meta_clear,
-        info_process,
-        live_chat_process,
-        make_markdown,
-    )
+    await asyncio.gather(*post_task)
 
 
 async def main_workflow(url: str, executor: ThreadPoolExecutor, session: ClientSession) -> None:
@@ -89,29 +89,38 @@ async def main_workflow(url: str, executor: ThreadPoolExecutor, session: ClientS
             return
 
         # 後處理資料創建
-        data = PostProcessData.data_process(
-            video_info, user_parameters.comment_update, miss_program, tmp_path
-        )
+        data = PostProcessData.data_process(video_info, tmp_path)
 
         # 後處理
         await post_process_workflow(data, session)
 
         # 封面圖壓縮
-        await post_process.cover_jxl_conversion(data)
+        if not (
+            "cjxl" in MISS_PROGRAM  # 缺少程式
+            or not await (tmp_path / "cover.jpg").is_file()  # 檔案不存在，或非jpg
+            or user_parameters.comment_update  # 僅更新留言
+        ):
+            await post_process.cover_jxl_conversion(data)
 
         # 完成檔案移動
         await file_operation.move(data)
 
     # par2創建
     async with par2_semaphore:
-        check_error = await par2_process.par2_verify(data)
+        if "par2" in MISS_PROGRAM:
+            return
+
+        check_error: bool = False
+        if user_parameters.comment_update:
+            check_error = await par2_process.par2_verify(data)
+
         await par2_process.par2_create(data, check_error)
 
 
 async def start_workflow(urls: tuple[str, ...]) -> None:
     """啟動下載工作流"""
     async with ClientSession() as session:
-        with ThreadPoolExecutor(max_workers) as executor:
+        with ThreadPoolExecutor(MAX_WORKERS) as executor:
             tasks = [asyncio.create_task(main_workflow(url, executor, session)) for url in urls]
 
             await tqdm_asyncio.gather(
@@ -123,14 +132,14 @@ async def start_workflow(urls: tuple[str, ...]) -> None:
 
 if __name__ == "__main__":
     # 初始化
-    miss_program = main_init()
-    user_parameters = Interactive()
+    MISS_PROGRAM: frozenset[str] = main_init()
+    user_parameters: Interactive = Interactive()
     user_parameters.main_ask()
     # 連結預處理
-    dl = DL(user_parameters.ydl_update_opts)
-    urls = urls_preprocess(user_parameters.urls, dl)
+    dl: DL = DL(user_parameters.ydl_update_opts)
+    urls: tuple[str, ...] = urls_preprocess(user_parameters.urls, dl)
 
     # 限制任務數
-    par2_semaphore = asyncio.Semaphore(1)
-    tmp_semaphore = asyncio.Semaphore(10)
+    par2_semaphore: Semaphore = asyncio.Semaphore(1)
+    tmp_semaphore: Semaphore = asyncio.Semaphore(10)
     asyncio.run(start_workflow(urls))

@@ -9,10 +9,6 @@ logger = logging.getLogger(__name__)
 async def meta_clear(data: PostProcessData) -> None:
     """影片封裝內詮釋資料清理"""
 
-    # 如果僅更新留言就跳出
-    if data.comment_update or "mkvpropedit" in data.miss_program:
-        return
-
     logger.debug("進入影片封裝內詮釋資料清理函式")
 
     # 影片詮釋資料清理

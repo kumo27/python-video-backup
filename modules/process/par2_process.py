@@ -10,10 +10,6 @@ logger = logging.getLogger(__name__)
 async def par2_create(data: PostProcessData, check_error: bool) -> None:
     """par2檔案處理模塊"""
 
-    # 如果缺少par2直接跳出
-    if "par2" in data.miss_program:
-        return
-
     # 驗證par2回傳值
     if check_error:
         logger.error(f"影片：{data.video_info['title']}，檢查到par2檔案出現問題，建議重新下載檔案")
@@ -63,10 +59,6 @@ async def par2_create(data: PostProcessData, check_error: bool) -> None:
 
 async def par2_verify(data: PostProcessData) -> bool:
     """檔案更新前驗證與修復"""
-
-    # 如果不更新留言或缺少par2直接跳出
-    if not data.comment_update or "par2" in data.miss_program:
-        return False
 
     logger.debug("進入par校驗函式")
 

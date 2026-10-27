@@ -3,7 +3,7 @@ from datetime import datetime
 
 from aiopathlib import AsyncPath
 
-from ..config import download_dir
+from ..config import DOWNLOAD_DIR
 
 
 @dataclass(frozen=True, slots=True)
@@ -12,15 +12,11 @@ class PostProcessData:
     video_info: dict
     tmp_dir: AsyncPath
     finish_dir: AsyncPath
-    comment_update: bool
-    miss_program: tuple[str, ...]
 
     @classmethod
     def data_process(
         cls,
         video_info: dict,
-        comment_update: bool,
-        miss_program: tuple[str, ...],
         tmp_dir: AsyncPath,
         finish_dir: AsyncPath | None = None,
     ):
@@ -36,9 +32,9 @@ class PostProcessData:
 
             # 合成完成資料夾
             finish_dir = (
-                AsyncPath(download_dir)
+                AsyncPath(DOWNLOAD_DIR)
                 / clean_channel
                 / (f"{release_date:%Y%m%d}_{clean_title}_{video_info['id']}")
             )
 
-        return cls(release_date, video_info, tmp_dir, finish_dir, comment_update, miss_program)
+        return cls(release_date, video_info, tmp_dir, finish_dir)
