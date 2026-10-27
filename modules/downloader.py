@@ -79,7 +79,7 @@ class DL:
         video_dl_opts = {
             **self.ydl_opts,
             "outtmpl": {
-                "default": str(tmp_dir / "%(format_id)s.%(ext)s"),
+                "default": str(tmp_dir / "video.%(ext)s"),
                 "infojson": str(tmp_dir) + "/",
                 "subtitle": str(tmp_dir) + "/",
             },  # 對命名的處理
@@ -116,8 +116,8 @@ class DL:
     ) -> dict[str, str]:
         name_suffix_dict: dict[str, str] = {}
 
-        # 暫時先用死迴圈
-        while True:
+        # 暫時性解決方案
+        for _ in range(10):
             async with session.get(name_and_url_tuple[1]) as response:
                 # 如果不正常
                 if not response.ok:
@@ -129,6 +129,10 @@ class DL:
 
                 data = await response.read()
                 break
+        else:
+            logger.error(f"使用者頭像 {name_and_url_tuple[1]} 無法下載")
+            name_suffix_dict[name_and_url_tuple[0]] = "unknown"
+            return name_suffix_dict
 
         name_suffix_dict[name_and_url_tuple[0]] = suffix
         async with aiofiles.open(

@@ -27,17 +27,18 @@ async def move(data: PostProcessData) -> None:
         if file_path.suffix == ".mkv":
             unlink_task_list.append((data.finish_dir / "video.mkv").unlink(missing_ok=True))
             move_task_list.append(aioshutil.move(file_path, data.finish_dir / "video.mkv"))
+
         # 字幕移動與封面移動
         elif file_path.suffix in {".srt", ".ass", ".vtt"} or file_path.stem == "cover":
             unlink_task_list.append((data.finish_dir / file_path.name).unlink(missing_ok=True))
             move_task_list.append(aioshutil.move(file_path, data.finish_dir))
+
         # 詮釋資料移動
         elif await file_path.is_dir() and file_path.name == ".meta_data":
-            if await (data.finish_dir / ".meta_data").exists():
+            if await (data.finish_dir / ".meta_data").is_dir():
+                unlink_task_list.append(aioshutil.rmtree(data.finish_dir / ".meta_data"))
+            if await (data.finish_dir / ".meta_data").is_file():
                 unlink_task_list.append((data.finish_dir / ".meta_data").unlink(missing_ok=True))
-                unlink_task_list.append(
-                    aioshutil.rmtree(data.finish_dir / ".meta_data", ignore_errors=True)
-                )
 
             move_task_list.append(aioshutil.move(file_path, data.finish_dir))
 

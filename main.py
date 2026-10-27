@@ -102,6 +102,8 @@ async def main_workflow(url: str, executor: ThreadPoolExecutor, session: ClientS
         ):
             await post_process.cover_jxl_conversion(data)
 
+        # breakpoint()
+
         # 完成檔案移動
         await file_operation.move(data)
 

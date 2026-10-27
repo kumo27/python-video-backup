@@ -12,5 +12,6 @@ urls.txt
 
 *cookie*
 
-# 開發用
+# 開發用 or 開發中
 dev/
+dev_*

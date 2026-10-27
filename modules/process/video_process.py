@@ -25,8 +25,12 @@ async def meta_clear(data: PostProcessData) -> None:
     )
     # fmt: on
 
-    await asyncio.create_subprocess_exec(
+    mkvpropedit_process = await asyncio.create_subprocess_exec(
         *meta_clear_cmd,
         stdout=asyncio.subprocess.DEVNULL,
         stderr=asyncio.subprocess.DEVNULL,
     )
+
+    # 確保執行完成
+    if await mkvpropedit_process.wait() != 0:
+        logger.warning("影片封裝內詮釋資料，可能沒清理完成，但影響不大")
