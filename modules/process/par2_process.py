@@ -1,7 +1,6 @@
 import asyncio
 import logging
 
-from . import file_operation
 from .data_process import PostProcessData
 
 logger = logging.getLogger(__name__)
@@ -10,29 +9,20 @@ logger = logging.getLogger(__name__)
 async def par2_create(data: PostProcessData, check_error: bool) -> None:
     """par2檔案處理模塊"""
 
-    # 驗證par2回傳值
-    if check_error:
-        logger.error(f"影片：{data.video_info['title']}，檢查到par2檔案出現問題，建議重新下載檔案")
-        return
-
     logger.debug("進入par2創建函式")
 
     # 先清除par2與舊留言
     for f in data.finish_dir.glob("*.par2"):
         f.unlink()
-    file_operation.old_comment_clear(data)
 
     # par2參數設定
     # fmt: off
-    par2_cmd = [
+    par2_cmd = (
         "par2", "c",
-        "-r30", "-b10000", "-n1",
-        "check.par2",
-    ]
+        "-R", "-r30", "-b10000", "-n1",
+        "check.par2", ".",
+    )
     # fmt: on
-
-    # 遞歸檔案清單
-    par2_cmd += [f.relative_to(data.finish_dir) for f in data.finish_dir.glob("**/*")]
 
     # 校驗檔創建
     logger.debug(par2_cmd)
@@ -74,7 +64,6 @@ async def par2_verify(data: PostProcessData) -> bool:
     match await par2_verify_process.wait():
         # 清理檔案並繼續
         case 0:
-            file_operation.old_comment_clear(data)
             return False
 
         # 嘗試修復並繼續
@@ -91,7 +80,6 @@ async def par2_verify(data: PostProcessData) -> bool:
                 return True
             for f in data.finish_dir.glob("*.1"):
                 f.unlink()
-            file_operation.old_comment_clear(data)
 
             return False
 

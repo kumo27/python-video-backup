@@ -59,7 +59,7 @@ async def post_process_workflow(data: PostProcessData, session: ClientSession) -
     # 留言markdown創建
     post_task.append(asyncio.create_task(meta_process.comment_process(data, name_suffix_dict)))
 
-    # 搬移處理完成的資料
+    # 等待處理完成
     await asyncio.gather(*post_task)
 
 
@@ -82,14 +82,18 @@ async def main_workflow(url: str, executor: ThreadPoolExecutor, session: ClientS
             info_str = await f.read()
         video_info: dict = json.loads(info_str)
 
+        # 後處理資料創建
+        data = PostProcessData.data_process(video_info, tmp_path)
+
+        check_error: bool = False
+        if user_parameters.comment_update:
+            check_error = await par2_process.par2_verify(data)
+
         # 縮圖下載
         dl_error = await dl.cover_get(session, video_info["thumbnail"], tmp_path)
         if dl_error:
             fail_urls_logger.error(url.strip())
             return
-
-        # 後處理資料創建
-        data = PostProcessData.data_process(video_info, tmp_path)
 
         # 後處理
         await post_process_workflow(data, session)
@@ -98,24 +102,23 @@ async def main_workflow(url: str, executor: ThreadPoolExecutor, session: ClientS
         if not (
             "cjxl" in MISS_PROGRAM  # 缺少程式
             or not await (tmp_path / "cover.jpg").is_file()  # 檔案不存在，或非jpg
-            or user_parameters.comment_update  # 僅更新留言
         ):
             await post_process.cover_jxl_conversion(data)
-
-        # breakpoint()
 
         # 完成檔案移動
         await file_operation.move(data)
 
+    file_operation.old_comment_clear(data)
+
+    if "par2" in MISS_PROGRAM:
+        return
+
+    if check_error:
+        logger.error(f"影片：{data.video_info['title']}，檢查到par2檔案出現問題，建議重新下載檔案")
+        return
+
     # par2創建
     async with par2_semaphore:
-        if "par2" in MISS_PROGRAM:
-            return
-
-        check_error: bool = False
-        if user_parameters.comment_update:
-            check_error = await par2_process.par2_verify(data)
-
         await par2_process.par2_create(data, check_error)
 
 

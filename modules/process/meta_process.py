@@ -98,7 +98,7 @@ async def info_process(data: PostProcessData) -> None:
     )
 
     # 影片資訊寫入
-    async with aiofiles.open((data.finish_dir / "info.txt"), "w", encoding="utf-8") as f:
+    async with aiofiles.open((data.tmp_dir / "info.txt"), "w", encoding="utf-8") as f:
         await f.write(output_info)
 
 

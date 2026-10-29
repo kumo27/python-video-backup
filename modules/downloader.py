@@ -114,7 +114,6 @@ class DL:
     async def author_thumbnail_get(
         self, session: ClientSession, name_and_url_tuple: tuple[str, str], tmp_dir: AsyncPath
     ) -> dict[str, str]:
-        name_suffix_dict: dict[str, str] = {}
 
         # 暫時性解決方案
         for _ in range(10):
@@ -131,16 +130,14 @@ class DL:
                 break
         else:
             logger.error(f"使用者頭像 {name_and_url_tuple[1]} 無法下載")
-            name_suffix_dict[name_and_url_tuple[0]] = "unknown"
-            return name_suffix_dict
+            return {name_and_url_tuple[0]: "unknown"}
 
-        name_suffix_dict[name_and_url_tuple[0]] = suffix
         async with aiofiles.open(
             tmp_dir / ".meta_data" / f"{name_and_url_tuple[0]}.{suffix}", mode="wb"
         ) as f:
             await f.write(data)
 
-        return name_suffix_dict
+        return {name_and_url_tuple[0]: suffix}
 
     def _error_message(self, e: DownloadError) -> None:
         for error, msg in self.error_dict.items():

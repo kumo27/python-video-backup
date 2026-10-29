@@ -28,8 +28,12 @@ async def move(data: PostProcessData) -> None:
             unlink_task_list.append((data.finish_dir / "video.mkv").unlink(missing_ok=True))
             move_task_list.append(aioshutil.move(file_path, data.finish_dir / "video.mkv"))
 
-        # 字幕移動與封面移動
-        elif file_path.suffix in {".srt", ".ass", ".vtt"} or file_path.stem == "cover":
+        # 字幕、整理後詮釋資料與封面移動
+        elif (
+            file_path.suffix in {".srt", ".ass", ".vtt"}
+            or file_path.stem == "cover"
+            or file_path.name == "info.txt"
+        ):
             unlink_task_list.append((data.finish_dir / file_path.name).unlink(missing_ok=True))
             move_task_list.append(aioshutil.move(file_path, data.finish_dir))
 
@@ -41,6 +45,10 @@ async def move(data: PostProcessData) -> None:
                 unlink_task_list.append((data.finish_dir / ".meta_data").unlink(missing_ok=True))
 
             move_task_list.append(aioshutil.move(file_path, data.finish_dir))
+
+        # 原始詮釋資料備用檔
+        elif file_path.name in {"info.json", "live_chat.json"}:
+            await aioshutil.move(file_path, (data.tmp_dir / ".meta_data"))
 
     await asyncio.gather(*unlink_task_list)
     await asyncio.gather(*move_task_list)
