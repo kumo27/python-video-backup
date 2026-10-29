@@ -1,0 +1,17 @@
+# 環境與暫存檔
+.venv
+.ruff_cache
+__pycache__
+
+# 自動生成資料夾
+download
+log
+
+# 使用者檔案
+urls.txt
+
+*cookie*
+
+# 開發用 or 開發中
+dev/
+dev_*

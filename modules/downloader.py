@@ -1,16 +1,15 @@
-import json
+import asyncio
 import logging
 import time
-from pathlib import Path
 from typing import Any
 
-import requests
+import aiofiles
+from aiohttp import ClientSession
+from aiopathlib import AsyncPath
 from yt_dlp import YoutubeDL
 from yt_dlp.utils import DownloadError
 
-from .config import log_root
-
-logger = logging.getLogger(f"{log_root}.{__name__}")
+logger = logging.getLogger(__name__)
 
 
 class DL:
@@ -31,7 +30,8 @@ class DL:
             "Join this channel to get access to members-only content": "加入頻道會員，下載會員影片",
         }  # 錯誤字典
         self.ydl_opts: dict[str, Any] = {
-            "format": "bv,ba",  # 品質控制
+            "format": "bv+ba",  # 品質控制
+            "merge_output_format": "mkv",  # 輸出mkv
             "format_sort": ("res", "vcodec:avc+vp9"),  # 微調後的排序
             "writeinfojson": True,  # 寫入影片資訊
             "getcomments": True,  # 寫入留言
@@ -73,14 +73,13 @@ class DL:
         logger.debug("返回影片列表")
         return tuple(new_url)
 
-    def download(self, url: str, tmp_dir: Path) -> bool:
+    def download(self, url: str, tmp_dir: AsyncPath) -> bool:
         """影片下載與影片資料讀取"""
         # 變數定義
-        video_info: dict = {}  # 影片資訊
         video_dl_opts = {
             **self.ydl_opts,
             "outtmpl": {
-                "default": str(tmp_dir / "%(format_id)s.%(ext)s"),
+                "default": str(tmp_dir / "video.%(ext)s"),
                 "infojson": str(tmp_dir) + "/",
                 "subtitle": str(tmp_dir) + "/",
             },  # 對命名的處理
@@ -95,16 +94,52 @@ class DL:
                 self._error_message(e)
                 return True
 
-        # 獲取info資料
-        with open(tmp_dir / ".info.json", encoding="utf-8") as f:
-            video_info = json.load(f)
-
-        # 下載縮圖
-        logger.debug("下載縮圖")
-        Path(tmp_dir / "cover.jpg").write_bytes(requests.get(video_info["thumbnail"]).content)
+        logger.debug("下載完成")
         return False
 
-    def _error_message(self, e: DownloadError):
+    async def cover_get(self, session: ClientSession, url: str, tmp_dir: AsyncPath) -> bool:
+        async with session.get(url) as response:
+            if not response.ok:
+                return True
+
+            data = await response.read()
+
+        suffix = "webp" if url[-5:] == ".webp" else "jpg"
+
+        async with aiofiles.open(tmp_dir / f"cover.{suffix}", mode="wb") as f:
+            await f.write(data)
+
+        return False
+
+    async def author_thumbnail_get(
+        self, session: ClientSession, name_and_url_tuple: tuple[str, str], tmp_dir: AsyncPath
+    ) -> dict[str, str]:
+
+        # 暫時性解決方案
+        for _ in range(10):
+            async with session.get(name_and_url_tuple[1]) as response:
+                # 如果不正常
+                if not response.ok:
+                    await asyncio.sleep(5)
+                    continue
+
+                if (suffix := response.headers["Content-Type"][6:]) == "jpeg":
+                    suffix = "jpg"
+
+                data = await response.read()
+                break
+        else:
+            logger.error(f"使用者頭像 {name_and_url_tuple[1]} 無法下載")
+            return {name_and_url_tuple[0]: "unknown"}
+
+        async with aiofiles.open(
+            tmp_dir / ".meta_data" / f"{name_and_url_tuple[0]}.{suffix}", mode="wb"
+        ) as f:
+            await f.write(data)
+
+        return {name_and_url_tuple[0]: suffix}
+
+    def _error_message(self, e: DownloadError) -> None:
         for error, msg in self.error_dict.items():
             if error in str(e):
                 logger.error(msg)
