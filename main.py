@@ -86,7 +86,7 @@ async def main_workflow(url: str, executor: ThreadPoolExecutor, session: ClientS
         data = PostProcessData.data_process(video_info, tmp_path)
 
         check_error: bool = False
-        if user_parameters.comment_update:
+        if user_parameters.comment_update and "par2" not in MISS_PROGRAM:
             check_error = await par2_process.par2_verify(data)
 
         # 縮圖下載
